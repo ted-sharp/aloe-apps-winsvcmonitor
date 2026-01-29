@@ -1,0 +1,43 @@
+@using Microsoft.AspNetCore.Components.Authorization
+
+<div class="login-display">
+    <CascadingAuthenticationState>
+        <AuthorizeView>
+            <Authorized>
+                <div class="auth-section">
+                    <span class="user-greeting">ログイン中</span>
+                    <form method="post" action="/logout" style="display: inline;">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">ログアウト</button>
+                    </form>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="auth-section">
+                    <a href="/login" class="btn btn-sm btn-primary">ログイン</a>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </CascadingAuthenticationState>
+</div>
+
+<style>
+    .login-display {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .auth-section {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .user-greeting {
+        color: #666;
+        font-size: 0.9rem;
+    }
+</style>
+
+@code {
+}

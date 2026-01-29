@@ -1,0 +1,68 @@
+@page "/services"
+@using Aloe.Apps.ServiceMonitorLib.Models
+@using Aloe.Apps.ServiceMonitorLib.Interfaces
+@using Aloe.Apps.ServiceMonitorServer.Components.Shared
+@attribute [Authorize]
+@inject IServiceManager ServiceManager
+@rendermode InteractiveServer
+
+<PageTitle>サービス監視</PageTitle>
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Windows サービス監視</h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary" @onclick="RefreshServices">
+                <span class="oi oi-reload"></span> リフレッシュ
+            </button>
+        </div>
+    </div>
+
+    @if (services == null)
+    {
+        <div class="alert alert-info">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            ロード中...
+        </div>
+    }
+    else if (services.Count == 0)
+    {
+        <div class="alert alert-warning">
+            監視対象のサービスが設定されていません。appsettings.jsonを確認してください。
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var service in services)
+            {
+                <div class="col-md-6 mb-4">
+                    <ServiceCard Service="service" OnServiceChanged="RefreshServices" />
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<ServiceInfo>? services;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshServices();
+    }
+
+    private async Task RefreshServices()
+    {
+        try
+        {
+            services = await ServiceManager.GetAllServicesAsync();
+        }
+        catch
+        {
+            // エラーハンドリング
+        }
+    }
+}

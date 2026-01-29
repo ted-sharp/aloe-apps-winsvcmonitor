@@ -1,0 +1,117 @@
+@page "/register-service"
+@using Aloe.Apps.ServiceMonitorLib.Models
+@using Aloe.Apps.ServiceMonitorLib.Interfaces
+@attribute [Authorize]
+@inject IServiceRegistrar ServiceRegistrar
+@rendermode InteractiveServer
+
+<PageTitle>サービス登録</PageTitle>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1>新規サービス登録</h1>
+
+            @if (!string.IsNullOrEmpty(resultMessage))
+            {
+                <div class="alert @(registrationSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+                    @resultMessage
+                    <button type="button" class="btn-close" @onclick="() => resultMessage = string.Empty"></button>
+                </div>
+            }
+
+            <form @onsubmit="SubmitForm">
+                <div class="mb-3">
+                    <label for="serviceName" class="form-label">サービス名 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="serviceName" @bind="request.ServiceName" placeholder="MyService" required />
+                    <small class="form-text text-muted">英数字、アンダースコア、ハイフンのみ使用可</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="displayName" class="form-label">表示名 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="displayName" @bind="request.DisplayName" placeholder="My Service" required />
+                </div>
+
+                <div class="mb-3">
+                    <label for="binaryPath" class="form-label">バイナリパス <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="binaryPath" @bind="request.BinaryPath" placeholder="C:\Program Files\MyApp\service.exe" required />
+                    <small class="form-text text-muted">サービス実行ファイルの完全なパス</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="startupType" class="form-label">起動タイプ</label>
+                    <select class="form-select" id="startupType" @bind="request.StartupType">
+                        <option value="manual">手動</option>
+                        <option value="automatic">自動</option>
+                        <option value="disabled">無効</option>
+                        <option value="delayed">自動 (遅延開始)</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">説明</label>
+                    <textarea class="form-control" id="description" @bind="request.Description" rows="3" placeholder="サービスの説明 (オプション)"></textarea>
+                </div>
+
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-end mb-4">
+                    <a href="/services" class="btn btn-secondary">キャンセル</a>
+                    <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                        @if (isSubmitting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        }
+                        登録
+                    </button>
+                </div>
+            </form>
+
+            <div class="card mt-5">
+                <div class="card-header">
+                    <h5 class="mb-0">重要な注意事項</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>サービス登録には管理者権限が必要です</li>
+                        <li>サービスはWindows Service Control Managerに登録されます</li>
+                        <li>サービスを監視対象にするには、appsettings.jsonにサービス名を追加してアプリケーションを再起動してください</li>
+                        <li>バイナリパスが正しくないと、サービスが起動に失敗します</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ServiceRegistrationRequest request = new();
+    private string resultMessage = string.Empty;
+    private bool registrationSuccess = false;
+    private bool isSubmitting = false;
+
+    private async Task SubmitForm()
+    {
+        isSubmitting = true;
+        try
+        {
+            var result = await ServiceRegistrar.RegisterServiceAsync(request);
+            resultMessage = result.Message;
+            registrationSuccess = result.Success;
+
+            if (result.Success)
+            {
+                request = new();
+                await Task.Delay(2000);
+                resultMessage = string.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            resultMessage = $"エラーが発生しました: {ex.Message}";
+            registrationSuccess = false;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

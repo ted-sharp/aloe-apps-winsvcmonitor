@@ -1,0 +1,85 @@
+@page "/login"
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Antiforgery
+@inject IHttpContextAccessor HttpContextAccessor
+
+<PageTitle>ログイン</PageTitle>
+
+<div class="login-container">
+    <div class="login-box">
+        <h2 class="text-center mb-4">ログイン</h2>
+
+        @if (!string.IsNullOrEmpty(Error))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @Error
+            </div>
+        }
+
+        <form method="post" action="/api/login">
+            <div class="mb-3">
+                <label for="password" class="form-label">パスワード</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="パスワードを入力" required autofocus />
+            </div>
+
+            <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+            @{
+                var httpContext = HttpContextAccessor.HttpContext;
+                if (httpContext != null)
+                {
+                    var token = Antiforgery.GetAndStoreTokens(httpContext).RequestToken;
+                    <input type="hidden" name="__RequestVerificationToken" value="@token" />
+                }
+            }
+
+            <button type="submit" class="btn btn-primary w-100">
+                ログイン
+            </button>
+        </form>
+
+        <div class="mt-4 p-3 bg-light rounded">
+            <p class="mb-0"><small>パスワード: <code>password123</code></small></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .login-box {
+        background: white;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .login-box h2 {
+        color: #333;
+    }
+
+    .btn-primary {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+
+    .btn-primary:hover {
+        background-color: #5568d3;
+        border-color: #5568d3;
+    }
+</style>
+
+@code {
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? Error { get; set; }
+}

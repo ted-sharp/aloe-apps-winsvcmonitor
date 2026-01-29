@@ -1,0 +1,10 @@
+namespace Aloe.Apps.ServiceMonitorLib.Models;
+
+public class ServiceRegistrationRequest
+{
+    public string ServiceName { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string BinaryPath { get; set; } = string.Empty;
+    public string StartupType { get; set; } = "Manual";
+    public string? Description { get; set; }
+}
