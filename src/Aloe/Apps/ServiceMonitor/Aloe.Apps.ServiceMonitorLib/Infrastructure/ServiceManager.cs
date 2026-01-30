@@ -11,37 +11,49 @@ public class ServiceManager : IServiceManager
     private readonly IWin32ServiceApi _win32Api;
     private readonly ILogger<ServiceManager> _logger;
     private readonly ServiceMonitorOptions _options;
+    private readonly IMonitoredServiceRepository _repository;
 
-    public ServiceManager(IWin32ServiceApi win32Api, ILogger<ServiceManager> logger, IOptions<ServiceMonitorOptions> options)
+    public ServiceManager(
+        IWin32ServiceApi win32Api,
+        ILogger<ServiceManager> logger,
+        IOptions<ServiceMonitorOptions> options,
+        IMonitoredServiceRepository repository)
     {
         _win32Api = win32Api;
         _logger = logger;
         _options = options.Value;
+        _repository = repository;
     }
 
     public async Task<List<ServiceInfo>> GetAllServicesAsync()
     {
-        return await Task.Run(() =>
+        // Combine services from both appsettings.json and JSON repository
+        var configServices = _options.MonitoredServices;
+        var repositoryServices = await _repository.GetAllAsync();
+
+        var allServiceNames = configServices
+            .Select(s => s.ServiceName)
+            .Concat(repositoryServices.Select(s => s.ServiceName))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var services = new List<ServiceInfo>();
+
+        foreach (var serviceName in allServiceNames)
         {
-            var services = new List<ServiceInfo>();
-
-            foreach (var config in _options.MonitoredServices)
+            var serviceInfo = await GetServiceByNameAsync(serviceName);
+            if (serviceInfo != null)
             {
-                var serviceInfo = GetServiceByName(config.ServiceName);
-                if (serviceInfo != null)
-                {
-                    services.Add(serviceInfo);
-                }
+                services.Add(serviceInfo);
             }
+        }
 
-            return services;
-        });
+        return services;
     }
 
     public async Task<ServiceInfo?> GetServiceAsync(string serviceName)
     {
-        ValidateServiceName(serviceName);
-        return await Task.Run(() => GetServiceByName(serviceName));
+        return await GetServiceByNameAsync(serviceName);
     }
 
     public async Task<ServiceOperationResult> StartServiceAsync(string serviceName)
@@ -159,28 +171,53 @@ public class ServiceManager : IServiceManager
         });
     }
 
-    private ServiceInfo? GetServiceByName(string serviceName)
+    private async Task<ServiceInfo?> GetServiceByNameAsync(string serviceName)
     {
-        try
+        return await Task.Run(async () =>
         {
-            var sc = new ServiceController(serviceName);
-            var config = _options.MonitoredServices.FirstOrDefault(x => x.ServiceName == serviceName);
-
-            return new ServiceInfo
+            try
             {
-                ServiceName = sc.ServiceName,
-                DisplayName = sc.DisplayName,
-                Description = config?.Description ?? string.Empty,
-                Status = ConvertStatus(sc.Status),
-                StartupType = sc.StartType.ToString(),
-                ProcessId = _win32Api.GetProcessId(serviceName) ?? 0,
-                IsCritical = config?.Critical ?? false
-            };
-        }
-        catch
-        {
-            return null;
-        }
+                var sc = new ServiceController(serviceName);
+
+                // Try to get config from both sources
+                var configFromSettings = _options.MonitoredServices.FirstOrDefault(x =>
+                    x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+                var configFromRepo = (await _repository.GetAllAsync()).FirstOrDefault(x =>
+                    x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+                var config = configFromSettings ?? configFromRepo;
+
+                var processId = _win32Api.GetProcessId(serviceName) ?? 0;
+                var status = ConvertStatus(sc.Status);
+
+                var serviceInfo = new ServiceInfo
+                {
+                    ServiceName = sc.ServiceName,
+                    DisplayName = sc.DisplayName,
+                    Description = config?.Description ?? string.Empty,
+                    Status = status,
+                    StartupType = sc.StartType.ToString(),
+                    ProcessId = processId,
+                    IsCritical = config?.Critical ?? false
+                };
+
+                // Populate new extended properties
+                if (status == ServiceStatus.Running && processId > 0)
+                {
+                    serviceInfo.Uptime = await _win32Api.GetServiceUptimeAsync(serviceName);
+                    serviceInfo.MemoryUsageMB = await _win32Api.GetProcessMemoryUsageMBAsync(processId);
+                    serviceInfo.LastStatusChange = await _win32Api.GetLastStatusChangeAsync(serviceName);
+                }
+
+                serviceInfo.DependentServicesCount = await _win32Api.GetDependentServicesCountAsync(serviceName);
+
+                return serviceInfo;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "サービス '{ServiceName}' の情報取得に失敗しました", serviceName);
+                return null;
+            }
+        });
     }
 
     private ServiceStatus ConvertStatus(ServiceControllerStatus status)
@@ -213,6 +250,161 @@ public class ServiceManager : IServiceManager
         if (!System.Text.RegularExpressions.Regex.IsMatch(serviceName, @"^[a-zA-Z0-9_\-]+$"))
         {
             throw new ArgumentException("無効なサービス名です", nameof(serviceName));
+        }
+    }
+
+    /// <summary>
+    /// Adds a service to the monitored services list in the JSON repository.
+    /// </summary>
+    public async Task<bool> AddToMonitoringAsync(string serviceName, string displayName, string description, bool critical)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(serviceName))
+            {
+                _logger.LogWarning("無効なサービス名で追加操作が試みられました");
+                return false;
+            }
+
+            // Check if service exists on Windows
+            try
+            {
+                var sc = new ServiceController(serviceName);
+                // Force evaluation to ensure service exists
+                _ = sc.Status;
+            }
+            catch
+            {
+                _logger.LogWarning("サービス '{ServiceName}' がWindows上に見つかりません", serviceName);
+                return false;
+            }
+
+            // Check if already monitored
+            var isMonitored = await IsServiceMonitoredAsync(serviceName);
+            if (isMonitored)
+            {
+                _logger.LogInformation("サービス '{ServiceName}' は既に監視されています", serviceName);
+                return false;
+            }
+
+            var config = new MonitoredServiceConfig
+            {
+                ServiceName = serviceName,
+                DisplayName = displayName,
+                Description = description,
+                Critical = critical
+            };
+
+            await _repository.AddAsync(config);
+            _logger.LogInformation("サービス '{ServiceName}' を監視リストに追加しました", serviceName);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "サービス '{ServiceName}' の監視追加に失敗しました", serviceName);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Removes a service from the monitored services list in the JSON repository.
+    /// </summary>
+    public async Task<bool> RemoveFromMonitoringAsync(string serviceName)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(serviceName))
+            {
+                _logger.LogWarning("無効なサービス名で削除操作が試みられました");
+                return false;
+            }
+
+            var isMonitored = await IsServiceMonitoredAsync(serviceName);
+            if (!isMonitored)
+            {
+                _logger.LogWarning("サービス '{ServiceName}' は監視リストに存在しません", serviceName);
+                return false;
+            }
+
+            await _repository.RemoveAsync(serviceName);
+            _logger.LogInformation("サービス '{ServiceName}' を監視リストから削除しました", serviceName);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "サービス '{ServiceName}' の監視削除に失敗しました", serviceName);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets all installed Windows services, not just monitored ones.
+    /// </summary>
+    public async Task<List<ServiceInfo>> GetAllInstalledServicesAsync()
+    {
+        return await Task.Run(async () =>
+        {
+            var services = new List<ServiceInfo>();
+
+            try
+            {
+                var allControllers = ServiceController.GetServices();
+
+                foreach (var sc in allControllers)
+                {
+                    var config = _options.MonitoredServices.FirstOrDefault(x =>
+                        x.ServiceName.Equals(sc.ServiceName, StringComparison.OrdinalIgnoreCase));
+                    var repoConfig = (await _repository.GetAllAsync()).FirstOrDefault(x =>
+                        x.ServiceName.Equals(sc.ServiceName, StringComparison.OrdinalIgnoreCase));
+
+                    try
+                    {
+                        var processId = _win32Api.GetProcessId(sc.ServiceName) ?? 0;
+                        var status = ConvertStatus(sc.Status);
+
+                        services.Add(new ServiceInfo
+                        {
+                            ServiceName = sc.ServiceName,
+                            DisplayName = sc.DisplayName,
+                            Description = config?.Description ?? repoConfig?.Description ?? string.Empty,
+                            Status = status,
+                            StartupType = sc.StartType.ToString(),
+                            ProcessId = processId,
+                            IsCritical = config?.Critical ?? repoConfig?.Critical ?? false,
+                            DependentServicesCount = await _win32Api.GetDependentServicesCountAsync(sc.ServiceName)
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "サービス '{ServiceName}' の情報取得に失敗しました", sc.ServiceName);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "インストール済みサービス一覧の取得に失敗しました");
+            }
+
+            return services;
+        });
+    }
+
+    /// <summary>
+    /// Checks if a service is currently being monitored.
+    /// </summary>
+    public async Task<bool> IsServiceMonitoredAsync(string serviceName)
+    {
+        try
+        {
+            var inSettings = _options.MonitoredServices.Any(x =>
+                x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+            var inRepository = await _repository.ExistsAsync(serviceName);
+            return inSettings || inRepository;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "サービス '{ServiceName}' の監視状態確認に失敗しました", serviceName);
+            return false;
         }
     }
 }

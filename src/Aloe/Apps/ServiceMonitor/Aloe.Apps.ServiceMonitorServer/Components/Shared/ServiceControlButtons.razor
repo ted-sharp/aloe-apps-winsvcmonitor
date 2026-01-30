@@ -25,9 +25,9 @@
     }
     else
     {
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; width: 100%">
-            @if (Service.Status != ServiceStatus.Running)
-            {
+        @if (Service.Status != ServiceStatus.Running)
+        {
+            <div style="display: flex; gap: 0.5rem; width: 100%">
                 <button type="button" class="success btn-sm" @onclick="() => StartService()" disabled="@isProcessing" style="flex: 1">
                     @if (isProcessing && currentAction == "start")
                     {
@@ -35,27 +35,39 @@
                     }
                     起動
                 </button>
-            }
+            </div>
+        }
 
-            @if (Service.Status == ServiceStatus.Running)
-            {
-                <button type="button" class="danger btn-sm" @onclick="InitiateStopService" disabled="@isProcessing" style="flex: 1">
-                    @if (isProcessing && currentAction == "stop")
-                    {
-                        <span class="spinner" role="status" aria-hidden="true"></span>
-                    }
-                    停止
+        @if (Service.Status == ServiceStatus.Running)
+        {
+            <div style="display: flex; gap: 0.5rem; width: 100%; align-items: center">
+                <button type="button" class="success btn-sm" disabled="@isProcessing" style="flex: 1">
+                    実行中
                 </button>
-
-                <button type="button" class="warning btn-sm" @onclick="InitiateRestartService" disabled="@isProcessing" style="flex: 1">
-                    @if (isProcessing && currentAction == "restart")
-                    {
-                        <span class="spinner" role="status" aria-hidden="true"></span>
-                    }
-                    再起動
-                </button>
-            }
-        </div>
+                <div style="display: flex; gap: 0.25rem">
+                    <button type="button" class="danger btn-xs" @onclick="InitiateStopService" disabled="@isProcessing" title="停止">
+                        @if (isProcessing && currentAction == "stop")
+                        {
+                            <span class="spinner" role="status" aria-hidden="true"></span>
+                        }
+                        else
+                        {
+                            <span>停止</span>
+                        }
+                    </button>
+                    <button type="button" class="warning btn-xs" @onclick="InitiateRestartService" disabled="@isProcessing" title="再起動">
+                        @if (isProcessing && currentAction == "restart")
+                        {
+                            <span class="spinner" role="status" aria-hidden="true"></span>
+                        }
+                        else
+                        {
+                            <span>再起動</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        }
     }
 }
 

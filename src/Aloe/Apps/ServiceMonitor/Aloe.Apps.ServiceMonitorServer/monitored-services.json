@@ -1,0 +1,10 @@
+{
+  "services": [
+    {
+      "serviceName": "Spooler",
+      "displayName": "Print Spooler",
+      "description": "Windows Print Spooler Service",
+      "critical": false
+    }
+  ]
+}

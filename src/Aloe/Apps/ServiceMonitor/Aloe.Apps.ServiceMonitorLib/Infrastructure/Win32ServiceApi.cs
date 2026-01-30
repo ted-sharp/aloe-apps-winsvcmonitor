@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Aloe.Apps.ServiceMonitorLib.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -87,6 +88,107 @@ public class Win32ServiceApi : IWin32ServiceApi
             if (scManager != IntPtr.Zero)
                 CloseServiceHandle(scManager);
         }
+    }
+
+    /// <summary>
+    /// Gets the uptime of a service based on its process start time.
+    /// Returns TimeSpan.Zero if service is not running or PID cannot be retrieved.
+    /// </summary>
+    public async Task<TimeSpan> GetServiceUptimeAsync(string serviceName)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var processId = GetProcessId(serviceName);
+                if (processId == null)
+                {
+                    return TimeSpan.Zero;
+                }
+
+                var process = Process.GetProcessById(processId.Value);
+                var uptime = DateTime.UtcNow - process.StartTime.ToUniversalTime();
+                return uptime > TimeSpan.Zero ? uptime : TimeSpan.Zero;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "サービス '{ServiceName}' の稼働時間取得に失敗しました", serviceName);
+                return TimeSpan.Zero;
+            }
+        });
+    }
+
+    /// <summary>
+    /// Gets the memory usage of a process in megabytes.
+    /// Returns 0 if process cannot be accessed.
+    /// </summary>
+    public async Task<double> GetProcessMemoryUsageMBAsync(int processId)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var process = Process.GetProcessById(processId);
+                var memoryMB = process.WorkingSet64 / (1024.0 * 1024.0);
+                return Math.Round(memoryMB, 2);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "プロセス {ProcessId} のメモリ使用量取得に失敗しました", processId);
+                return 0.0;
+            }
+        });
+    }
+
+    /// <summary>
+    /// Gets the count of services that depend on the specified service.
+    /// Returns 0 if count cannot be determined.
+    /// </summary>
+    public async Task<int> GetDependentServicesCountAsync(string serviceName)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var controller = new System.ServiceProcess.ServiceController(serviceName);
+                var dependentServices = controller.DependentServices;
+                return dependentServices.Length;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "サービス '{ServiceName}' の依存サービス数取得に失敗しました", serviceName);
+                return 0;
+            }
+        });
+    }
+
+    /// <summary>
+    /// Gets the last time a service's status changed.
+    /// This is an approximation based on service restart time.
+    /// Returns null if information cannot be determined.
+    /// </summary>
+    public async Task<DateTime?> GetLastStatusChangeAsync(string serviceName)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var processId = GetProcessId(serviceName);
+                if (processId == null)
+                {
+                    // Service is not running, so status changed when it stopped
+                    return (DateTime?)null;
+                }
+
+                var process = Process.GetProcessById(processId.Value);
+                return (DateTime?)process.StartTime;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "サービス '{ServiceName}' の状態変更時刻取得に失敗しました", serviceName);
+                return (DateTime?)null;
+            }
+        });
     }
 
 }

@@ -38,6 +38,12 @@ builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStat
 // ServiceMonitor設定
 builder.Services.Configure<ServiceMonitorOptions>(
     builder.Configuration.GetSection(ServiceMonitorOptions.SectionName));
+
+// Monitored Services Repository
+var monitoredServicesPath = Path.Combine(AppContext.BaseDirectory, "monitored-services.json");
+builder.Services.AddScoped<IMonitoredServiceRepository>(
+    sp => new JsonMonitoredServiceRepository(sp.GetRequiredService<ILogger<JsonMonitoredServiceRepository>>(), monitoredServicesPath));
+
 builder.Services.AddScoped<IWin32ServiceApi, Win32ServiceApi>();
 builder.Services.AddScoped<IServiceManager, ServiceManager>();
 builder.Services.AddScoped<IServiceRegistrar, ServiceRegistrar>();

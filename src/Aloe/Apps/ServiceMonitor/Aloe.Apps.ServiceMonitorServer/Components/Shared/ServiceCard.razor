@@ -4,7 +4,7 @@
 
 @if (Service != null)
 {
-    <article style="height: 100%">
+    <article class="service-card">
         <header>
             <div style="display: flex; justify-content: space-between; align-items: center">
                 <div>
@@ -16,28 +16,62 @@
                 </mark>
             </div>
         </header>
-        <div class="mb-3">
-            <strong>ステータス:</strong> @GetStatusText()
-        </div>
 
         @if (!string.IsNullOrEmpty(Service.Description))
         {
-            <div class="mb-3">
-                <strong>説明:</strong>
-                <p style="margin: 0.25rem 0 0 0; color: var(--muted-color)">@Service.Description</p>
-            </div>
+            <p style="margin: 0.5rem 0; color: var(--muted-color); font-size: 0.9rem">@Service.Description</p>
         }
 
-        <div class="mb-3">
-            <strong>起動タイプ:</strong> @Service.StartupType
+        <div class="service-details">
+            <div class="service-detail-item">
+                <span class="service-detail-label">ステータス</span>
+                <span class="service-detail-value">@GetStatusText()</span>
+            </div>
+            <div class="service-detail-item">
+                <span class="service-detail-label">起動タイプ</span>
+                <span class="service-detail-value">@Service.StartupType</span>
+            </div>
+
+            @if (Service.Status == ServiceStatus.Running && Service.Uptime != TimeSpan.Zero)
+            {
+                <div class="service-detail-item">
+                    <span class="service-detail-label">稼働時間</span>
+                    <span class="service-detail-value">@FormatUptime(Service.Uptime)</span>
+                </div>
+            }
+
+            @if (Service.MemoryUsageMB > 0)
+            {
+                <div class="service-detail-item">
+                    <span class="service-detail-label">メモリ使用量</span>
+                    <span class="service-detail-value">@Service.MemoryUsageMB.ToString("F1") MB</span>
+                </div>
+            }
+
+            @if (Service.ProcessId > 0)
+            {
+                <div class="service-detail-item">
+                    <span class="service-detail-label">プロセスID</span>
+                    <span class="service-detail-value">@Service.ProcessId</span>
+                </div>
+            }
+
+            @if (Service.DependentServicesCount > 0)
+            {
+                <div class="service-detail-item">
+                    <span class="service-detail-label">依存サービス</span>
+                    <span class="service-detail-value">@Service.DependentServicesCount 個</span>
+                </div>
+            }
+
+            @if (Service.LastStatusChange.HasValue)
+            {
+                <div class="service-detail-item">
+                    <span class="service-detail-label">最終変更</span>
+                    <span class="service-detail-value">@FormatRelativeTime(Service.LastStatusChange.Value)</span>
+                </div>
+            }
         </div>
-
-        @if (Service.ProcessId > 0)
-        {
-            <div class="mb-3">
-                <strong>プロセスID:</strong> @Service.ProcessId
-            </div>
-        }
 
         @if (!string.IsNullOrEmpty(operationMessage))
         {
@@ -45,8 +79,31 @@
                 @operationMessage
             </aside>
         }
-        <footer>
-            <ServiceControlButtons Service="Service" OnOperationComplete="OnOperationComplete" />
+
+        @if (showRemoveConfirm)
+        {
+            <aside class="alert alert-warning" role="alert" style="margin-bottom: 1rem">
+                <div style="margin-bottom: 0.5rem">このサービスの監視を削除しますか？</div>
+                <div style="display: flex; gap: 0.5rem">
+                    <button type="button" class="danger btn-xs" @onclick="ConfirmRemove">削除</button>
+                    <button type="button" class="secondary btn-xs" @onclick="CancelRemove">キャンセル</button>
+                </div>
+            </aside>
+        }
+
+        <footer style="margin-top: auto; padding-top: 1rem">
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem">
+                <div style="flex: 1">
+                    <ServiceControlButtons Service="Service" OnOperationComplete="OnOperationComplete" />
+                </div>
+            </div>
+            <button type="button" class="secondary btn-xs" @onclick="InitiateRemove" disabled="@isRemoving" style="width: 100%">
+                @if (isRemoving)
+                {
+                    <span class="spinner" role="status" aria-hidden="true"></span>
+                }
+                監視から削除
+            </button>
         </footer>
     </article>
 }
@@ -58,8 +115,13 @@
     [Parameter]
     public EventCallback OnServiceChanged { get; set; }
 
+    [Parameter]
+    public EventCallback<string> OnRemoveService { get; set; }
+
     private string operationMessage = string.Empty;
     private bool operationSuccess = false;
+    private bool showRemoveConfirm = false;
+    private bool isRemoving = false;
 
     private string GetStatusText()
     {
@@ -80,13 +142,36 @@
     {
         return Service?.Status switch
         {
-            ServiceStatus.Running => "bg-success",
-            ServiceStatus.Stopped => "bg-danger",
-            ServiceStatus.Paused => "bg-warning text-dark",
-            ServiceStatus.Starting => "bg-info",
-            ServiceStatus.Stopping => "bg-secondary",
-            _ => "bg-secondary"
+            ServiceStatus.Running => "success",
+            ServiceStatus.Stopped => "danger",
+            ServiceStatus.Paused => "warning",
+            ServiceStatus.Starting => "info",
+            ServiceStatus.Stopping => "secondary",
+            _ => "secondary"
         };
+    }
+
+    private string FormatUptime(TimeSpan uptime)
+    {
+        if (uptime.TotalDays >= 1)
+            return $"{(int)uptime.TotalDays}日 {uptime.Hours}時間 {uptime.Minutes}分";
+        else if (uptime.TotalHours >= 1)
+            return $"{uptime.Hours}時間 {uptime.Minutes}分";
+        else
+            return $"{uptime.Minutes}分";
+    }
+
+    private string FormatRelativeTime(DateTime dateTime)
+    {
+        var diff = DateTime.Now - dateTime;
+        if (diff.TotalSeconds < 60)
+            return "数秒前";
+        else if (diff.TotalMinutes < 60)
+            return $"{(int)diff.TotalMinutes}分前";
+        else if (diff.TotalHours < 24)
+            return $"{(int)diff.TotalHours}時間前";
+        else
+            return $"{(int)diff.TotalDays}日前";
     }
 
     private async Task OnOperationComplete((string, bool) result)
@@ -96,5 +181,25 @@
         await OnServiceChanged.InvokeAsync();
         await Task.Delay(3000);
         operationMessage = string.Empty;
+    }
+
+    private void InitiateRemove()
+    {
+        showRemoveConfirm = true;
+    }
+
+    private async Task ConfirmRemove()
+    {
+        if (Service == null) return;
+        isRemoving = true;
+        showRemoveConfirm = false;
+
+        await OnRemoveService.InvokeAsync(Service.ServiceName);
+        isRemoving = false;
+    }
+
+    private void CancelRemove()
+    {
+        showRemoveConfirm = false;
     }
 }

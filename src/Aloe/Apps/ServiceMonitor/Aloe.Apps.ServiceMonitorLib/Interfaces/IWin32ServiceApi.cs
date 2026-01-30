@@ -3,4 +3,8 @@ namespace Aloe.Apps.ServiceMonitorLib.Interfaces;
 public interface IWin32ServiceApi
 {
     int? GetProcessId(string serviceName);
+    Task<TimeSpan> GetServiceUptimeAsync(string serviceName);
+    Task<double> GetProcessMemoryUsageMBAsync(int processId);
+    Task<int> GetDependentServicesCountAsync(string serviceName);
+    Task<DateTime?> GetLastStatusChangeAsync(string serviceName);
 }

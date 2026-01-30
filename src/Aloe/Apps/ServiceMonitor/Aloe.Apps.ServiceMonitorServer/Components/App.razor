@@ -6,17 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <ResourcePreloader />
-    <!-- 1. CSSリセット -->
-    <link rel="stylesheet" href="lib/sanitize-css/sanitize.min.css" />
-    <!-- 2. メインフレームワーク -->
+    <!-- 1. メインフレームワーク -->
     <link rel="stylesheet" href="lib/pico-css/css/pico.min.css" />
-    <!-- 3. CSS変数ライブラリ -->
+    <!-- 2. CSS変数ライブラリ -->
     <link rel="stylesheet" href="lib/open-props/open-props.min.css" />
-    <!-- 4. カスタムCSS -->
+    <!-- 3. カスタムCSS -->
     <link rel="stylesheet" href="@Assets["app.css"]" />
-    <!-- 5. スコープ付きCSS -->
+    <!-- 4. スコープ付きCSS -->
     <link rel="stylesheet" href="@Assets["Aloe.Apps.ServiceMonitorServer.styles.css"]" />
-    <!-- 6. アニメーション -->
+    <!-- 5. アニメーション -->
     <link rel="stylesheet" href="lib/animate-css/animate.min.css" />
     <ImportMap />
     <HeadOutlet />
@@ -26,8 +24,6 @@
     <Routes />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
-    <!-- focus-visible polyfill for better focus management -->
-    <script src="lib/focus-visible/dist/focus-visible.min.js"></script>
 </body>
 
 </html>
