@@ -4,53 +4,51 @@
 
 @if (Service != null)
 {
-    <div class="card h-100">
-        <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center">
+    <article style="height: 100%">
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: center">
                 <div>
                     <h5 class="mb-1">@Service.DisplayName</h5>
-                    <small class="text-muted">@Service.ServiceName</small>
+                    <small>@Service.ServiceName</small>
                 </div>
-                <span class="badge @GetStatusBadgeClass()">
+                <mark class="badge @GetStatusBadgeClass()">
                     @GetStatusText()
-                </span>
+                </mark>
             </div>
+        </header>
+        <div class="mb-3">
+            <strong>ステータス:</strong> @GetStatusText()
         </div>
-        <div class="card-body">
+
+        @if (!string.IsNullOrEmpty(Service.Description))
+        {
             <div class="mb-3">
-                <strong>ステータス:</strong> @GetStatusText()
+                <strong>説明:</strong>
+                <p style="margin: 0.25rem 0 0 0; color: var(--muted-color)">@Service.Description</p>
             </div>
+        }
 
-            @if (!string.IsNullOrEmpty(Service.Description))
-            {
-                <div class="mb-3">
-                    <strong>説明:</strong>
-                    <p class="text-muted mb-0">@Service.Description</p>
-                </div>
-            }
-
-            <div class="mb-3">
-                <strong>起動タイプ:</strong> @Service.StartupType
-            </div>
-
-            @if (Service.ProcessId > 0)
-            {
-                <div class="mb-3">
-                    <strong>プロセスID:</strong> @Service.ProcessId
-                </div>
-            }
-
-            @if (!string.IsNullOrEmpty(operationMessage))
-            {
-                <div class="alert @(operationSuccess ? "alert-success" : "alert-danger") alert-sm" role="alert">
-                    @operationMessage
-                </div>
-            }
+        <div class="mb-3">
+            <strong>起動タイプ:</strong> @Service.StartupType
         </div>
-        <div class="card-footer bg-light">
+
+        @if (Service.ProcessId > 0)
+        {
+            <div class="mb-3">
+                <strong>プロセスID:</strong> @Service.ProcessId
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(operationMessage))
+        {
+            <aside class="alert @(operationSuccess ? "alert-success" : "alert-danger") alert-sm" role="alert">
+                @operationMessage
+            </aside>
+        }
+        <footer>
             <ServiceControlButtons Service="Service" OnOperationComplete="OnOperationComplete" />
-        </div>
-    </div>
+        </footer>
+    </article>
 }
 
 @code {

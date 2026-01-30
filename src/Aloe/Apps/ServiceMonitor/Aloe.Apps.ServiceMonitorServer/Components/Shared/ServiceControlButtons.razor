@@ -6,32 +6,32 @@
 {
     @if (pendingConfirmAction != null)
     {
-        <div class="alert alert-warning mb-0" role="alert">
+        <aside class="alert alert-warning" role="alert" style="margin-bottom: 0">
             <div class="mb-2">
                 @GetConfirmMessage()
             </div>
-            <div class="btn-group btn-group-sm" role="group">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap">
                 @if (pendingConfirmAction == "stop")
                 {
-                    <button type="button" class="btn btn-danger" @onclick="ConfirmStopService">はい、停止する</button>
+                    <button type="button" class="danger btn-sm" @onclick="ConfirmStopService">はい、停止する</button>
                 }
                 @if (pendingConfirmAction == "restart")
                 {
-                    <button type="button" class="btn btn-warning" @onclick="ConfirmRestartService">はい、再起動する</button>
+                    <button type="button" class="warning btn-sm" @onclick="ConfirmRestartService">はい、再起動する</button>
                 }
-                <button type="button" class="btn btn-secondary" @onclick="CancelConfirmation">キャンセル</button>
+                <button type="button" class="secondary btn-sm" @onclick="CancelConfirmation">キャンセル</button>
             </div>
-        </div>
+        </aside>
     }
     else
     {
-        <div class="btn-group w-100" role="group">
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; width: 100%">
             @if (Service.Status != ServiceStatus.Running)
             {
-                <button type="button" class="btn btn-sm btn-success" @onclick="() => StartService()" disabled="@isProcessing">
+                <button type="button" class="success btn-sm" @onclick="() => StartService()" disabled="@isProcessing" style="flex: 1">
                     @if (isProcessing && currentAction == "start")
                     {
-                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span class="spinner" role="status" aria-hidden="true"></span>
                     }
                     起動
                 </button>
@@ -39,18 +39,18 @@
 
             @if (Service.Status == ServiceStatus.Running)
             {
-                <button type="button" class="btn btn-sm btn-danger" @onclick="InitiateStopService" disabled="@isProcessing">
+                <button type="button" class="danger btn-sm" @onclick="InitiateStopService" disabled="@isProcessing" style="flex: 1">
                     @if (isProcessing && currentAction == "stop")
                     {
-                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span class="spinner" role="status" aria-hidden="true"></span>
                     }
                     停止
                 </button>
 
-                <button type="button" class="btn btn-sm btn-warning" @onclick="InitiateRestartService" disabled="@isProcessing">
+                <button type="button" class="warning btn-sm" @onclick="InitiateRestartService" disabled="@isProcessing" style="flex: 1">
                     @if (isProcessing && currentAction == "restart")
                     {
-                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span class="spinner" role="status" aria-hidden="true"></span>
                     }
                     再起動
                 </button>

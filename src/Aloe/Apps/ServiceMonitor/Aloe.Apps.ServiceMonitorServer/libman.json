@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "defaultProvider": "jsdelivr",
+  "libraries": [
+    {
+      "provider": "jsdelivr",
+      "library": "sanitize.css@13.0.0",
+      "destination": "wwwroot/lib/sanitize-css/",
+      "files": ["sanitize.min.css"]
+    },
+    {
+      "provider": "jsdelivr",
+      "library": "@picocss/pico@2.1.1",
+      "destination": "wwwroot/lib/pico-css/",
+      "files": ["css/pico.min.css"]
+    },
+    {
+      "library": "open-props@1.7.17",
+      "destination": "wwwroot/lib/open-props/",
+      "provider": "unpkg",
+      "files": ["open-props.min.css"]
+    },
+    {
+      "provider": "jsdelivr",
+      "library": "animate.css@4.1.1",
+      "destination": "wwwroot/lib/animate-css/",
+      "files": ["animate.min.css"]
+    },
+    {
+      "provider": "jsdelivr",
+      "library": "focus-visible@5.2.1",
+      "destination": "wwwroot/lib/focus-visible/",
+      "files": ["dist/focus-visible.min.js"]
+    }
+  ]
+}

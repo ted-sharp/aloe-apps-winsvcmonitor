@@ -3,22 +3,16 @@
 <div class="page">
     <aside class="sidebar">
         <LoginDisplay />
-        <nav class="flex-column">
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                    <span class="oi oi-home" aria-hidden="true"></span> ホーム
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="services">
-                    <span class="oi oi-list" aria-hidden="true"></span> サービス監視
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="register-service">
-                    <span class="oi oi-plus" aria-hidden="true"></span> サービス登録
-                </NavLink>
-            </div>
+        <nav style="display: flex; flex-direction: column;">
+            <a href="/" class="nav-item">
+                <span class="oi oi-home" aria-hidden="true"></span> ホーム
+            </a>
+            <a href="/services" class="nav-item">
+                <span class="oi oi-list" aria-hidden="true"></span> サービス監視
+            </a>
+            <a href="/register-service" class="nav-item">
+                <span class="oi oi-plus" aria-hidden="true"></span> サービス登録
+            </a>
         </nav>
     </aside>
 

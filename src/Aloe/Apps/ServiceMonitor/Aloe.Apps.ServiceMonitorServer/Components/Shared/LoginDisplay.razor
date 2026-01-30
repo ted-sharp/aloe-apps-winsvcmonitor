@@ -7,13 +7,13 @@
                 <div class="auth-section">
                     <span class="user-greeting">ログイン中</span>
                     <form method="post" action="/logout" style="display: inline;">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary">ログアウト</button>
+                        <button type="submit" class="secondary btn-sm">ログアウト</button>
                     </form>
                 </div>
             </Authorized>
             <NotAuthorized>
                 <div class="auth-section">
-                    <a href="/login" class="btn btn-sm btn-primary">ログイン</a>
+                    <a href="/login" role="button" class="btn-sm">ログイン</a>
                 </div>
             </NotAuthorized>
         </AuthorizeView>
@@ -23,7 +23,7 @@
 <style>
     .login-display {
         padding: 0.5rem 0;
-        border-bottom: 1px solid #e9ecef;
+        border-bottom: 1px solid var(--form-element-border-color);
     }
 
     .auth-section {
@@ -34,7 +34,7 @@
     }
 
     .user-greeting {
-        color: #666;
+        color: var(--muted-color);
         font-size: 0.9rem;
     }
 </style>

@@ -8,43 +8,37 @@
 
 <PageTitle>サービス監視</PageTitle>
 
-<div class="container mt-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1>Windows サービス監視</h1>
-        </div>
-        <div class="col-md-4 text-end">
-            <button class="btn btn-primary" @onclick="RefreshServices">
-                <span class="oi oi-reload"></span> リフレッシュ
-            </button>
-        </div>
+<main class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem">
+        <h1>Windows サービス監視</h1>
+        <button class="btn-sm" @onclick="RefreshServices">
+            <span class="oi oi-reload" aria-hidden="true"></span> リフレッシュ
+        </button>
     </div>
 
     @if (services == null)
     {
-        <div class="alert alert-info">
-            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        <aside class="alert alert-info" role="alert">
+            <span class="spinner" role="status" aria-hidden="true"></span>
             ロード中...
-        </div>
+        </aside>
     }
     else if (services.Count == 0)
     {
-        <div class="alert alert-warning">
+        <aside class="alert alert-warning" role="alert">
             監視対象のサービスが設定されていません。appsettings.jsonを確認してください。
-        </div>
+        </aside>
     }
     else
     {
-        <div class="row">
+        <div class="grid">
             @foreach (var service in services)
             {
-                <div class="col-md-6 mb-4">
-                    <ServiceCard Service="service" OnServiceChanged="RefreshServices" />
-                </div>
+                <ServiceCard Service="service" OnServiceChanged="RefreshServices" />
             }
         </div>
     }
-</div>
+</main>
 
 @code {
     private List<ServiceInfo>? services;
