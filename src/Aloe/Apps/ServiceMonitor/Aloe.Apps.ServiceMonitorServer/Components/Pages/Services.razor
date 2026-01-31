@@ -16,7 +16,7 @@
             <h1>Windows サービス監視</h1>
         </hgroup>
         <form method="post" action="/logout" style="margin: 0;">
-            <button type="submit" title="ログアウト" style="background: none; border: none; color: var(--muted-color); cursor: pointer; font-size: 1.2rem; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">✕</button>
+            <button type="submit" class="icon-button" title="ログアウト" style="font-size: 1.2rem;">✕</button>
         </form>
     </header>
 
@@ -119,10 +119,8 @@
                         <button class="success" @onclick="() => StartService(service.ServiceName)" disabled="@(service.Status != ServiceStatus.Stopped)">起動</button>
                         <button class="danger" @onclick="() => StopService(service.ServiceName)" disabled="@(service.Status != ServiceStatus.Running)">停止</button>
                         <button class="warning" @onclick="() => RestartService(service.ServiceName)" disabled="@(service.Status != ServiceStatus.Running)">再起動</button>
-                    </div>
-                    <div role="group">
                         <button class="contrast outline" @onclick="() => RegisterService(service)" disabled="@(service.Status != ServiceStatus.Unknown || string.IsNullOrEmpty(service.BinaryPath))">登録</button>
-                        <button class="contrast outline" @onclick="() => DeleteService(service.ServiceName)" disabled="@(service.Status != ServiceStatus.Stopped)">解除</button>
+                        <button class="delete" @onclick="() => DeleteService(service.ServiceName)" disabled="@(service.Status != ServiceStatus.Stopped)">解除</button>
                     </div>
                 </footer>
             </article>
