@@ -12,17 +12,20 @@ public class ServiceManager : IServiceManager
     private readonly ILogger<ServiceManager> _logger;
     private readonly ServiceMonitorOptions _options;
     private readonly IMonitoredServiceRepository _repository;
+    private readonly IServiceRegistrar _registrar;
 
     public ServiceManager(
         IWin32ServiceApi win32Api,
         ILogger<ServiceManager> logger,
         IOptions<ServiceMonitorOptions> options,
-        IMonitoredServiceRepository repository)
+        IMonitoredServiceRepository repository,
+        IServiceRegistrar registrar)
     {
         _win32Api = win32Api;
         _logger = logger;
         _options = options.Value;
         _repository = repository;
+        _registrar = registrar;
     }
 
     public async Task<List<ServiceInfo>> GetAllServicesAsync()
@@ -58,7 +61,18 @@ public class ServiceManager : IServiceManager
 
     public async Task<ServiceOperationResult> StartServiceAsync(string serviceName)
     {
-        ValidateServiceName(serviceName);
+        // 監視対象のサービスか確認
+        if (!await IsServiceMonitoredAsync(serviceName))
+        {
+            return ServiceOperationResult.FailureResult($"サービス '{serviceName}' は監視対象に登録されていません");
+        }
+
+        // サービス名の形式チェック
+        if (!System.Text.RegularExpressions.Regex.IsMatch(serviceName, @"^[a-zA-Z0-9_\-]+$"))
+        {
+            return ServiceOperationResult.FailureResult("無効なサービス名です");
+        }
+
         return await Task.Run(() =>
         {
             try
@@ -96,7 +110,18 @@ public class ServiceManager : IServiceManager
 
     public async Task<ServiceOperationResult> StopServiceAsync(string serviceName)
     {
-        ValidateServiceName(serviceName);
+        // 監視対象のサービスか確認
+        if (!await IsServiceMonitoredAsync(serviceName))
+        {
+            return ServiceOperationResult.FailureResult($"サービス '{serviceName}' は監視対象に登録されていません");
+        }
+
+        // サービス名の形式チェック
+        if (!System.Text.RegularExpressions.Regex.IsMatch(serviceName, @"^[a-zA-Z0-9_\-]+$"))
+        {
+            return ServiceOperationResult.FailureResult("無効なサービス名です");
+        }
+
         return await Task.Run(() =>
         {
             try
@@ -134,7 +159,18 @@ public class ServiceManager : IServiceManager
 
     public async Task<ServiceOperationResult> RestartServiceAsync(string serviceName)
     {
-        ValidateServiceName(serviceName);
+        // 監視対象のサービスか確認
+        if (!await IsServiceMonitoredAsync(serviceName))
+        {
+            return ServiceOperationResult.FailureResult($"サービス '{serviceName}' は監視対象に登録されていません");
+        }
+
+        // サービス名の形式チェック
+        if (!System.Text.RegularExpressions.Regex.IsMatch(serviceName, @"^[a-zA-Z0-9_\-]+$"))
+        {
+            return ServiceOperationResult.FailureResult("無効なサービス名です");
+        }
+
         return await Task.Run(() =>
         {
             try
@@ -405,6 +441,77 @@ public class ServiceManager : IServiceManager
         {
             _logger.LogWarning(ex, "サービス '{ServiceName}' の監視状態確認に失敗しました", serviceName);
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Deletes a Windows service completely (unregisters it and removes from monitoring).
+    /// </summary>
+    public async Task<ServiceOperationResult> DeleteServiceAsync(string serviceName)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(serviceName))
+            {
+                return ServiceOperationResult.FailureResult("サービス名は空にできません");
+            }
+
+            // Validate service name format
+            if (!System.Text.RegularExpressions.Regex.IsMatch(serviceName, @"^[a-zA-Z0-9_\-]+$"))
+            {
+                return ServiceOperationResult.FailureResult("無効なサービス名です");
+            }
+
+            // Stop service if running
+            try
+            {
+                var sc = new ServiceController(serviceName);
+                if (sc.Status == ServiceControllerStatus.Running)
+                {
+                    sc.Stop();
+                    sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
+                    _logger.LogInformation("サービス '{ServiceName}' を停止しました", serviceName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "サービス '{ServiceName}' の停止に失敗しました（続行）", serviceName);
+                // Continue with deletion even if stop fails
+            }
+
+            // Unregister the service using sc delete
+            var unregisterResult = await _registrar.UnregisterServiceAsync(serviceName);
+            if (!unregisterResult.Success)
+            {
+                return unregisterResult;
+            }
+
+            // Remove from monitoring list
+            await _repository.RemoveAsync(serviceName);
+
+            _logger.LogInformation("サービス '{ServiceName}' が完全に削除されました", serviceName);
+            return ServiceOperationResult.SuccessResult($"サービス '{serviceName}' を削除しました");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "サービス '{ServiceName}' の削除に失敗しました", serviceName);
+            return ServiceOperationResult.FailureResult($"削除に失敗しました: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Gets the default service configuration settings.
+    /// </summary>
+    public async Task<ServiceDefaults> GetServiceDefaultsAsync()
+    {
+        try
+        {
+            return await _repository.GetServiceDefaultsAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "サービスのデフォルト設定取得に失敗しました");
+            return new ServiceDefaults();
         }
     }
 }

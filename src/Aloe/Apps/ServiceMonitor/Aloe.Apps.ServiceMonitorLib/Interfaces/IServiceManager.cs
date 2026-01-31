@@ -13,4 +13,6 @@ public interface IServiceManager
     Task<bool> RemoveFromMonitoringAsync(string serviceName);
     Task<List<ServiceInfo>> GetAllInstalledServicesAsync();
     Task<bool> IsServiceMonitoredAsync(string serviceName);
+    Task<ServiceOperationResult> DeleteServiceAsync(string serviceName);
+    Task<ServiceDefaults> GetServiceDefaultsAsync();
 }

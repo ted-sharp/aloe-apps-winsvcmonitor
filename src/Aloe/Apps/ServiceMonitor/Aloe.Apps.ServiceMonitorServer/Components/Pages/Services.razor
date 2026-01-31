@@ -12,9 +12,6 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem">
         <h1>Windows サービス監視</h1>
         <div style="display: flex; gap: 0.5rem">
-            <button class="success btn-sm" @onclick="OpenAddServiceModal" disabled="@isLoadingServices">
-                <span class="oi oi-plus" aria-hidden="true"></span> サービスを追加
-            </button>
             <button class="btn-sm" @onclick="RefreshServices" disabled="@isLoadingServices">
                 <span class="oi oi-reload" aria-hidden="true"></span> リフレッシュ
             </button>
@@ -31,62 +28,17 @@
     else if (services.Count == 0)
     {
         <aside class="alert alert-warning" role="alert">
-            監視対象のサービスが設定されていません。
-            <button class="secondary btn-xs" style="margin-top: 0.5rem" @onclick="OpenAddServiceModal">サービスを追加する</button>
+            監視対象のサービスが設定されていません。appsettings.services.json を設定してください。
         </aside>
     }
     else
     {
-        <div class="service-grid">
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 2rem">
             @foreach (var service in services)
             {
-                <ServiceCard Service="service" OnServiceChanged="RefreshServices" OnRemoveService="HandleRemoveService" />
+                <ServiceCard Service="service" OnServiceChanged="RefreshServices" OnDeleteService="HandleDeleteService" />
             }
         </div>
-    }
-
-    @if (showAddServiceModal)
-    {
-        <dialog open>
-            <div class="modal-header">
-                <h3>監視対象サービスを追加</h3>
-            </div>
-            <div class="modal-body">
-                @if (isLoadingInstalledServices)
-                {
-                    <aside class="alert alert-info" role="alert">
-                        <span class="spinner" role="status" aria-hidden="true"></span>
-                        サービス一覧を読み込んでいます...
-                    </aside>
-                }
-                else if (availableServices == null || availableServices.Count == 0)
-                {
-                    <aside class="alert alert-warning" role="alert">
-                        追加可能なサービスがありません。すべてのサービスは既に監視中です。
-                    </aside>
-                }
-                else
-                {
-                    <input type="text" placeholder="サービスを検索..." @oninput="e => searchText = e.Value?.ToString() ?? string.Empty" style="margin-bottom: 1rem" />
-                    <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--form-element-border-color); border-radius: 0.375rem; padding: 0.5rem">
-                        @foreach (var service in FilteredAvailableServices())
-                        {
-                            <div style="padding: 0.75rem; border-bottom: 1px solid var(--form-element-border-color); cursor: pointer" @onclick="() => SelectServiceToAdd(service)">
-                                <strong>@service.DisplayName</strong>
-                                <small style="display: block; color: var(--muted-color)">@service.ServiceName</small>
-                                @if (!string.IsNullOrEmpty(service.Description))
-                                {
-                                    <small style="display: block; color: var(--muted-color); margin-top: 0.25rem">@service.Description</small>
-                                }
-                            </div>
-                        }
-                    </div>
-                }
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="secondary" @onclick="CloseAddServiceModal">キャンセル</button>
-            </div>
-        </dialog>
     }
 
     @if (!string.IsNullOrEmpty(statusMessage))
@@ -99,11 +51,7 @@
 
 @code {
     private List<ServiceInfo>? services;
-    private List<ServiceInfo>? availableServices;
-    private bool showAddServiceModal = false;
     private bool isLoadingServices = false;
-    private bool isLoadingInstalledServices = false;
-    private string searchText = string.Empty;
     private string statusMessage = string.Empty;
     private bool statusMessageIsSuccess = false;
 
@@ -129,96 +77,19 @@
         }
     }
 
-    private async Task OpenAddServiceModal()
-    {
-        showAddServiceModal = true;
-        isLoadingInstalledServices = true;
-        searchText = string.Empty;
-
-        try
-        {
-            var installed = await ServiceManager.GetAllInstalledServicesAsync();
-            var currentlyMonitored = services ?? new List<ServiceInfo>();
-            var monitoredNames = currentlyMonitored.Select(s => s.ServiceName).ToList();
-
-            availableServices = installed
-                .Where(s => !monitoredNames.Contains(s.ServiceName))
-                .OrderBy(s => s.DisplayName)
-                .ToList();
-        }
-        catch (Exception ex)
-        {
-            ShowStatusMessage($"インストール済みサービスの取得に失敗しました: {ex.Message}", false);
-            availableServices = new List<ServiceInfo>();
-        }
-        finally
-        {
-            isLoadingInstalledServices = false;
-        }
-    }
-
-    private void CloseAddServiceModal()
-    {
-        showAddServiceModal = false;
-        availableServices = null;
-        searchText = string.Empty;
-    }
-
-    private List<ServiceInfo> FilteredAvailableServices()
-    {
-        if (availableServices == null) return new List<ServiceInfo>();
-
-        if (string.IsNullOrWhiteSpace(searchText))
-            return availableServices;
-
-        var search = searchText.ToLower();
-        return availableServices
-            .Where(s => s.DisplayName.ToLower().Contains(search) ||
-                       s.ServiceName.ToLower().Contains(search) ||
-                       (s.Description?.ToLower().Contains(search) ?? false))
-            .ToList();
-    }
-
-    private async Task SelectServiceToAdd(ServiceInfo service)
+    private async Task HandleDeleteService(string serviceName)
     {
         try
         {
-            var success = await ServiceManager.AddToMonitoringAsync(
-                service.ServiceName,
-                service.DisplayName,
-                service.Description ?? string.Empty,
-                false);
-
-            if (success)
+            var result = await ServiceManager.DeleteServiceAsync(serviceName);
+            if (result.Success)
             {
-                ShowStatusMessage($"'{service.DisplayName}' を監視対象に追加しました", true);
-                CloseAddServiceModal();
+                ShowStatusMessage($"サービスを削除しました", true);
                 await RefreshServices();
             }
             else
             {
-                ShowStatusMessage($"'{service.DisplayName}' の追加に失敗しました", false);
-            }
-        }
-        catch (Exception ex)
-        {
-            ShowStatusMessage($"エラーが発生しました: {ex.Message}", false);
-        }
-    }
-
-    private async Task HandleRemoveService(string serviceName)
-    {
-        try
-        {
-            var success = await ServiceManager.RemoveFromMonitoringAsync(serviceName);
-            if (success)
-            {
-                ShowStatusMessage($"サービスを監視対象から削除しました", true);
-                await RefreshServices();
-            }
-            else
-            {
-                ShowStatusMessage($"サービスの削除に失敗しました", false);
+                ShowStatusMessage($"削除に失敗しました: {result.Message}", false);
             }
         }
         catch (Exception ex)

@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="monitored-services.json">
+    <None Update="appsettings.services.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

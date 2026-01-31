@@ -40,7 +40,7 @@ builder.Services.Configure<ServiceMonitorOptions>(
     builder.Configuration.GetSection(ServiceMonitorOptions.SectionName));
 
 // Monitored Services Repository
-var monitoredServicesPath = Path.Combine(AppContext.BaseDirectory, "monitored-services.json");
+var monitoredServicesPath = Path.Combine(AppContext.BaseDirectory, "appsettings.services.json");
 builder.Services.AddScoped<IMonitoredServiceRepository>(
     sp => new JsonMonitoredServiceRepository(sp.GetRequiredService<ILogger<JsonMonitoredServiceRepository>>(), monitoredServicesPath));
 

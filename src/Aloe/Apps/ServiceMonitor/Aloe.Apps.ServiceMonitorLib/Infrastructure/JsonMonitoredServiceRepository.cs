@@ -7,6 +7,7 @@ namespace Aloe.Apps.ServiceMonitorLib.Infrastructure;
 
 /// <summary>
 /// Repository implementation for persisting monitored services to a JSON file.
+/// Supports both new (ServiceConfiguration) and legacy (MonitoredServicesData) formats.
 /// Provides thread-safe read/write operations with atomic writes.
 /// </summary>
 public class JsonMonitoredServiceRepository : IMonitoredServiceRepository
@@ -35,29 +36,62 @@ public class JsonMonitoredServiceRepository : IMonitoredServiceRepository
         await _semaphore.WaitAsync();
         try
         {
-            if (!File.Exists(_filePath))
+            return await ReadServicesDirectlyAsync();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <summary>
+    /// Reads services directly from file without acquiring semaphore.
+    /// For use only within semaphore-locked sections.
+    /// </summary>
+    private async Task<List<MonitoredServiceConfig>> ReadServicesDirectlyAsync()
+    {
+        if (!File.Exists(_filePath))
+        {
+            _logger.LogWarning("Monitored services file not found at {FilePath}. Returning empty list.", _filePath);
+            return [];
+        }
+
+        try
+        {
+            var json = await File.ReadAllTextAsync(_filePath);
+
+            // Try new format first (ServiceConfiguration)
+            try
             {
-                _logger.LogWarning("Monitored services file not found at {FilePath}. Returning empty list.", _filePath);
-                return [];
+                var config = JsonSerializer.Deserialize<ServiceConfiguration>(json, JsonOptions);
+                if (config?.Services != null)
+                {
+                    return config.Services;
+                }
+            }
+            catch
+            {
+                // Fall through to legacy format
             }
 
-            var json = await File.ReadAllTextAsync(_filePath);
-            var data = JsonSerializer.Deserialize<MonitoredServicesData>(json, JsonOptions);
-            return data?.Services ?? [];
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogError(ex, "Error deserializing monitored services JSON file at {FilePath}", _filePath);
+            // Try legacy format (MonitoredServicesData)
+            try
+            {
+                var data = JsonSerializer.Deserialize<MonitoredServicesData>(json, JsonOptions);
+                return data?.Services ?? [];
+            }
+            catch
+            {
+                // Fall through
+            }
+
+            _logger.LogWarning("Could not deserialize monitored services from {FilePath}", _filePath);
             return [];
         }
         catch (IOException ex)
         {
             _logger.LogError(ex, "Error reading monitored services file at {FilePath}", _filePath);
             return [];
-        }
-        finally
-        {
-            _semaphore.Release();
         }
     }
 
@@ -79,7 +113,7 @@ public class JsonMonitoredServiceRepository : IMonitoredServiceRepository
         await _semaphore.WaitAsync();
         try
         {
-            var services = await GetAllAsync();
+            var services = await ReadServicesDirectlyAsync();
 
             // Check if service already exists
             if (services.Any(s => s.ServiceName.Equals(service.ServiceName, StringComparison.OrdinalIgnoreCase)))
@@ -89,7 +123,7 @@ public class JsonMonitoredServiceRepository : IMonitoredServiceRepository
             }
 
             services.Add(service);
-            await SaveAsync(services);
+            await SaveDirectlyAsync(services);
             _logger.LogInformation("Added service {ServiceName} to monitored list.", service.ServiceName);
         }
         finally
@@ -106,13 +140,13 @@ public class JsonMonitoredServiceRepository : IMonitoredServiceRepository
         await _semaphore.WaitAsync();
         try
         {
-            var services = await GetAllAsync();
+            var services = await ReadServicesDirectlyAsync();
             var originalCount = services.Count;
             services.RemoveAll(s => s.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
 
             if (services.Count < originalCount)
             {
-                await SaveAsync(services);
+                await SaveDirectlyAsync(services);
                 _logger.LogInformation("Removed service {ServiceName} from monitored list.", serviceName);
             }
             else
@@ -135,8 +169,48 @@ public class JsonMonitoredServiceRepository : IMonitoredServiceRepository
         await _semaphore.WaitAsync();
         try
         {
-            var data = new MonitoredServicesData { Services = services };
-            var json = JsonSerializer.Serialize(data, JsonOptions);
+            await SaveDirectlyAsync(services);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <summary>
+    /// Saves services directly to file without acquiring semaphore.
+    /// For use only within semaphore-locked sections.
+    /// </summary>
+    private async Task SaveDirectlyAsync(List<MonitoredServiceConfig> services)
+    {
+        try
+        {
+            // Read current defaults (if any) to preserve them
+            ServiceDefaults defaults = new();
+            if (File.Exists(_filePath))
+            {
+                try
+                {
+                    var json = await File.ReadAllTextAsync(_filePath);
+                    var config = JsonSerializer.Deserialize<ServiceConfiguration>(json, JsonOptions);
+                    if (config?.ServiceDefaults != null)
+                    {
+                        defaults = config.ServiceDefaults;
+                    }
+                }
+                catch
+                {
+                    // Use default if can't parse
+                }
+            }
+
+            var config_new = new ServiceConfiguration
+            {
+                ServiceDefaults = defaults,
+                Services = services
+            };
+
+            var json_new = JsonSerializer.Serialize(config_new, JsonOptions);
 
             // Ensure directory exists
             var directory = Path.GetDirectoryName(_filePath);
@@ -147,7 +221,7 @@ public class JsonMonitoredServiceRepository : IMonitoredServiceRepository
 
             // Atomic write: write to temp file, then rename
             var tempPath = _filePath + ".tmp";
-            await File.WriteAllTextAsync(tempPath, json);
+            await File.WriteAllTextAsync(tempPath, json_new);
 
             // Rename temp file to actual file (atomic operation on most systems)
             if (File.Exists(_filePath))
@@ -161,6 +235,81 @@ public class JsonMonitoredServiceRepository : IMonitoredServiceRepository
         catch (IOException ex)
         {
             _logger.LogError(ex, "Error writing monitored services to file at {FilePath}", _filePath);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets the default service configuration.
+    /// </summary>
+    public async Task<ServiceDefaults> GetServiceDefaultsAsync()
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            if (!File.Exists(_filePath))
+            {
+                return new ServiceDefaults();
+            }
+
+            try
+            {
+                var json = await File.ReadAllTextAsync(_filePath);
+                var config = JsonSerializer.Deserialize<ServiceConfiguration>(json, JsonOptions);
+                return config?.ServiceDefaults ?? new ServiceDefaults();
+            }
+            catch
+            {
+                _logger.LogWarning("Could not read service defaults from {FilePath}", _filePath);
+                return new ServiceDefaults();
+            }
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <summary>
+    /// Saves the default service configuration.
+    /// </summary>
+    public async Task SaveServiceDefaultsAsync(ServiceDefaults defaults)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            var services = await ReadServicesDirectlyAsync();
+            var config = new ServiceConfiguration
+            {
+                ServiceDefaults = defaults,
+                Services = services
+            };
+
+            var json = JsonSerializer.Serialize(config, JsonOptions);
+
+            // Ensure directory exists
+            var directory = Path.GetDirectoryName(_filePath);
+            if (directory != null && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            // Atomic write: write to temp file, then rename
+            var tempPath = _filePath + ".tmp";
+            await File.WriteAllTextAsync(tempPath, json);
+
+            // Rename temp file to actual file
+            if (File.Exists(_filePath))
+            {
+                File.Delete(_filePath);
+            }
+            File.Move(tempPath, _filePath);
+
+            _logger.LogInformation("Saved service defaults to {FilePath}", _filePath);
+        }
+        catch (IOException ex)
+        {
+            _logger.LogError(ex, "Error writing service defaults to file at {FilePath}", _filePath);
             throw;
         }
         finally

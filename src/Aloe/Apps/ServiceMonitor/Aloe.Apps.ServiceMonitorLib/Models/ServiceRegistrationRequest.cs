@@ -7,4 +7,6 @@ public class ServiceRegistrationRequest
     public string BinaryPath { get; set; } = string.Empty;
     public string StartupType { get; set; } = "Manual";
     public string? Description { get; set; }
+    public string Account { get; set; } = "LocalSystem";
+    public string Password { get; set; } = string.Empty;
 }

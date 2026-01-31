@@ -26,6 +26,18 @@ public class ServiceRegistrar : IServiceRegistrar
                 scCreateCommand += $" DisplayName= \"{request.DisplayName}\"";
             }
 
+            // Add account and password if specified
+            if (!string.IsNullOrEmpty(request.Account))
+            {
+                scCreateCommand += $" obj= \"{request.Account}\"";
+
+                // Add password if account is specified and password is not empty
+                if (!string.IsNullOrEmpty(request.Password))
+                {
+                    scCreateCommand += $" password= \"{request.Password}\"";
+                }
+            }
+
             var result = await ExecuteScCommand(scCreateCommand);
 
             if (!result.Success)
@@ -127,13 +139,12 @@ public class ServiceRegistrar : IServiceRegistrar
             var psi = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = "sc.exe",
+                Arguments = arguments,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 CreateNoWindow = true
             };
-
-            psi.ArgumentList.Add(arguments);
 
             using var process = System.Diagnostics.Process.Start(psi);
             if (process == null)

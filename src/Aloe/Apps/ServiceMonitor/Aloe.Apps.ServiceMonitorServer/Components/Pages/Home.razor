@@ -8,31 +8,17 @@
         <p>ブラウザからWindowsサービスを監視・操作します</p>
     </hgroup>
 
-    <div class="grid mt-4">
-        <article style="height: 100%">
-            <header>
-                <h3>
-                    <span class="oi oi-list" aria-hidden="true"></span> サービス監視
-                </h3>
-            </header>
-            <p>登録済みのWindowsサービスをリアルタイムで監視します。各サービスのステータス、起動タイプ、プロセスIDを確認できます。</p>
-            <footer>
-                <a href="/services" role="button">サービス一覧へ</a>
-            </footer>
-        </article>
-
-        <article style="height: 100%">
-            <header>
-                <h3>
-                    <span class="oi oi-plus" aria-hidden="true"></span> サービス登録
-                </h3>
-            </header>
-            <p>新規にWindows サービスを登録します。管理者権限が必要です。</p>
-            <footer>
-                <a href="/register-service" role="button">登録画面へ</a>
-            </footer>
-        </article>
-    </div>
+    <article class="mt-4" style="max-width: 600px">
+        <header>
+            <h3>
+                <span class="oi oi-list" aria-hidden="true"></span> サービス監視
+            </h3>
+        </header>
+        <p>appsettings.services.json で設定されたWindowsサービスをリアルタイムで監視します。各サービスのステータス、起動タイプ、プロセスIDを確認できます。</p>
+        <footer>
+            <a href="/services" role="button">サービス一覧へ</a>
+        </footer>
+    </article>
 
     <article class="mt-4">
         <header>
@@ -43,7 +29,6 @@
             <li>リアルタイムステータス更新（SignalR）</li>
             <li>サービスの起動・停止・再起動</li>
             <li>サービス詳細情報表示（説明、プロセスID等）</li>
-            <li>新規サービスの登録</li>
             <li>自動ポーリングによる監視</li>
         </ul>
     </article>
@@ -54,7 +39,7 @@
         </header>
         <ul>
             <li><strong>管理者権限が必須です</strong>：このアプリケーションはWindows管理者権限で実行する必要があります</li>
-            <li><strong>ホワイトリスト制御</strong>：appsettings.jsonに記載されたサービスのみ操作可能です</li>
+            <li><strong>設定ファイル管理</strong>：appsettings.services.json に記載されたサービスのみ監視対象となります</li>
             <li><strong>Windows限定</strong>：このアプリケーはWindows環境でのみ動作します</li>
             <li><strong>セキュリティ</strong>：本番環境での使用時は認証・認可の実装を推奨します</li>
         </ul>

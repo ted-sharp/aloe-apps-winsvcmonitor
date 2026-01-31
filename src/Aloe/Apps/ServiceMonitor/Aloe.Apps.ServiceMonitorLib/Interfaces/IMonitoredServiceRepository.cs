@@ -31,4 +31,14 @@ public interface IMonitoredServiceRepository
     /// Saves all monitored services to the JSON file.
     /// </summary>
     Task SaveAsync(List<MonitoredServiceConfig> services);
+
+    /// <summary>
+    /// Gets the default service configuration (account, password, etc.).
+    /// </summary>
+    Task<ServiceDefaults> GetServiceDefaultsAsync();
+
+    /// <summary>
+    /// Saves the default service configuration.
+    /// </summary>
+    Task SaveServiceDefaultsAsync(ServiceDefaults defaults);
 }
