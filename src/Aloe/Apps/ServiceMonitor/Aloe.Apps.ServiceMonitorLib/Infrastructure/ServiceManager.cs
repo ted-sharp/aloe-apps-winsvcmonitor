@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.ServiceProcess;
 using Aloe.Apps.ServiceMonitorLib.Interfaces;
 using Aloe.Apps.ServiceMonitorLib.Models;
@@ -73,7 +74,7 @@ public class ServiceManager : IServiceManager
             return ServiceOperationResult.FailureResult("無効なサービス名です");
         }
 
-        return await Task.Run(() =>
+        return await Task.Run(async () =>
         {
             try
             {
@@ -93,12 +94,45 @@ public class ServiceManager : IServiceManager
             catch (System.ComponentModel.Win32Exception ex)
             {
                 _logger.LogError(ex, "サービス '{ServiceName}' の起動に失敗しました", serviceName);
-                return ServiceOperationResult.FailureResult($"起動に失敗しました: {ex.Message}");
+
+                var config = _options.MonitoredServices.FirstOrDefault(x =>
+                    x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+
+                if (config == null)
+                {
+                    var repoServices = await _repository.GetAllAsync();
+                    config = repoServices.FirstOrDefault(x =>
+                        x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+                }
+
+                var exeOutput = config != null ? await GetExeConsoleOutputAsync(config) : string.Empty;
+                var errorMessage = !string.IsNullOrEmpty(exeOutput) ? exeOutput : ex.Message;
+                return ServiceOperationResult.FailureResult($"起動に失敗しました: {errorMessage}");
             }
             catch (InvalidOperationException ex)
             {
-                _logger.LogError(ex, "サービス '{ServiceName}' が見つかりません", serviceName);
-                return ServiceOperationResult.FailureResult($"サービスが見つかりません: {ex.Message}");
+                _logger.LogError(ex, "サービス '{ServiceName}' の起動に失敗しました", serviceName);
+
+                var config = _options.MonitoredServices.FirstOrDefault(x =>
+                    x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+
+                if (config == null)
+                {
+                    var repoServices = await _repository.GetAllAsync();
+                    config = repoServices.FirstOrDefault(x =>
+                        x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+                }
+
+                var exeOutput = config != null ? await GetExeConsoleOutputAsync(config) : string.Empty;
+                var errorMessage = !string.IsNullOrEmpty(exeOutput) ? exeOutput : ex.Message;
+
+                // InnerException が Win32Exception の場合、そのメッセージも試す
+                if (string.IsNullOrEmpty(exeOutput) && ex.InnerException is System.ComponentModel.Win32Exception win32Ex)
+                {
+                    errorMessage = win32Ex.Message;
+                }
+
+                return ServiceOperationResult.FailureResult($"起動に失敗しました: {errorMessage}");
             }
             catch (Exception ex)
             {
@@ -122,7 +156,7 @@ public class ServiceManager : IServiceManager
             return ServiceOperationResult.FailureResult("無効なサービス名です");
         }
 
-        return await Task.Run(() =>
+        return await Task.Run(async () =>
         {
             try
             {
@@ -142,12 +176,44 @@ public class ServiceManager : IServiceManager
             catch (System.ComponentModel.Win32Exception ex)
             {
                 _logger.LogError(ex, "サービス '{ServiceName}' の停止に失敗しました", serviceName);
-                return ServiceOperationResult.FailureResult($"停止に失敗しました: {ex.Message}");
+
+                var config = _options.MonitoredServices.FirstOrDefault(x =>
+                    x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+
+                if (config == null)
+                {
+                    var repoServices = await _repository.GetAllAsync();
+                    config = repoServices.FirstOrDefault(x =>
+                        x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+                }
+
+                var exeOutput = config != null ? await GetExeConsoleOutputAsync(config) : string.Empty;
+                var errorMessage = !string.IsNullOrEmpty(exeOutput) ? exeOutput : ex.Message;
+                return ServiceOperationResult.FailureResult($"停止に失敗しました: {errorMessage}");
             }
             catch (InvalidOperationException ex)
             {
-                _logger.LogError(ex, "サービス '{ServiceName}' が見つかりません", serviceName);
-                return ServiceOperationResult.FailureResult($"サービスが見つかりません: {ex.Message}");
+                _logger.LogError(ex, "サービス '{ServiceName}' の停止に失敗しました", serviceName);
+
+                var config = _options.MonitoredServices.FirstOrDefault(x =>
+                    x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+
+                if (config == null)
+                {
+                    var repoServices = await _repository.GetAllAsync();
+                    config = repoServices.FirstOrDefault(x =>
+                        x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+                }
+
+                var exeOutput = config != null ? await GetExeConsoleOutputAsync(config) : string.Empty;
+                var errorMessage = !string.IsNullOrEmpty(exeOutput) ? exeOutput : ex.Message;
+
+                if (string.IsNullOrEmpty(exeOutput) && ex.InnerException is System.ComponentModel.Win32Exception win32Ex)
+                {
+                    errorMessage = win32Ex.Message;
+                }
+
+                return ServiceOperationResult.FailureResult($"停止に失敗しました: {errorMessage}");
             }
             catch (Exception ex)
             {
@@ -171,7 +237,7 @@ public class ServiceManager : IServiceManager
             return ServiceOperationResult.FailureResult("無効なサービス名です");
         }
 
-        return await Task.Run(() =>
+        return await Task.Run(async () =>
         {
             try
             {
@@ -192,12 +258,44 @@ public class ServiceManager : IServiceManager
             catch (System.ComponentModel.Win32Exception ex)
             {
                 _logger.LogError(ex, "サービス '{ServiceName}' の再起動に失敗しました", serviceName);
-                return ServiceOperationResult.FailureResult($"再起動に失敗しました: {ex.Message}");
+
+                var config = _options.MonitoredServices.FirstOrDefault(x =>
+                    x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+
+                if (config == null)
+                {
+                    var repoServices = await _repository.GetAllAsync();
+                    config = repoServices.FirstOrDefault(x =>
+                        x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+                }
+
+                var exeOutput = config != null ? await GetExeConsoleOutputAsync(config) : string.Empty;
+                var errorMessage = !string.IsNullOrEmpty(exeOutput) ? exeOutput : ex.Message;
+                return ServiceOperationResult.FailureResult($"再起動に失敗しました: {errorMessage}");
             }
             catch (InvalidOperationException ex)
             {
-                _logger.LogError(ex, "サービス '{ServiceName}' が見つかりません", serviceName);
-                return ServiceOperationResult.FailureResult($"サービスが見つかりません: {ex.Message}");
+                _logger.LogError(ex, "サービス '{ServiceName}' の再起動に失敗しました", serviceName);
+
+                var config = _options.MonitoredServices.FirstOrDefault(x =>
+                    x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+
+                if (config == null)
+                {
+                    var repoServices = await _repository.GetAllAsync();
+                    config = repoServices.FirstOrDefault(x =>
+                        x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+                }
+
+                var exeOutput = config != null ? await GetExeConsoleOutputAsync(config) : string.Empty;
+                var errorMessage = !string.IsNullOrEmpty(exeOutput) ? exeOutput : ex.Message;
+
+                if (string.IsNullOrEmpty(exeOutput) && ex.InnerException is System.ComponentModel.Win32Exception win32Ex)
+                {
+                    errorMessage = win32Ex.Message;
+                }
+
+                return ServiceOperationResult.FailureResult($"再起動に失敗しました: {errorMessage}");
             }
             catch (Exception ex)
             {
@@ -205,6 +303,100 @@ public class ServiceManager : IServiceManager
                 return ServiceOperationResult.FailureResult($"エラーが発生しました: {ex.Message}");
             }
         });
+    }
+
+    private async Task<string> GetExeConsoleOutputAsync(MonitoredServiceConfig config)
+    {
+        try
+        {
+            if (config == null || string.IsNullOrEmpty(config.BinaryPath))
+            {
+                _logger.LogWarning("Config is null or BinaryPath is empty");
+                return string.Empty;
+            }
+
+            var binaryPath = ResolveBinaryPath(config.BinaryPath, config.BinaryPathAlt);
+            _logger.LogInformation("Resolved binary path: {BinaryPath}", binaryPath);
+
+            if (!File.Exists(binaryPath))
+            {
+                _logger.LogWarning("Binary file not found: {BinaryPath}", binaryPath);
+                return string.Empty;
+            }
+
+            return await Task.Run(async () =>
+            {
+                try
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = binaryPath,
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true
+                    };
+
+                    using (var process = System.Diagnostics.Process.Start(psi))
+                    {
+                        if (process == null)
+                        {
+                            _logger.LogWarning("Failed to start process for {BinaryPath}", binaryPath);
+                            return string.Empty;
+                        }
+
+                        var output = await process.StandardOutput.ReadToEndAsync();
+                        var error = await process.StandardError.ReadToEndAsync();
+
+                        _logger.LogInformation("Process output - Error: '{Error}', Output: '{Output}'", error, output);
+
+                        process.WaitForExit(5000);
+
+                        var result = (!string.IsNullOrEmpty(error) ? error : output).Trim();
+                        if (result.Length > 300)
+                            result = result.Substring(0, 300) + "...";
+
+                        _logger.LogInformation("Final result: '{Result}'", result);
+                        return result;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error executing process");
+                    return string.Empty;
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in GetExeConsoleOutputAsync");
+            return string.Empty;
+        }
+    }
+
+    private static string ResolveBinaryPath(string binaryPath, string? binaryPathAlt)
+    {
+        var primary = ResolveSinglePath(binaryPath);
+        if (!string.IsNullOrEmpty(primary) && File.Exists(primary))
+            return primary;
+        if (!string.IsNullOrWhiteSpace(binaryPathAlt))
+        {
+            var alt = ResolveSinglePath(binaryPathAlt);
+            if (File.Exists(alt))
+                return alt;
+            if (string.IsNullOrEmpty(primary))
+                return alt;
+        }
+        return primary;
+    }
+
+    private static string ResolveSinglePath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return path;
+        if (Path.IsPathRooted(path))
+            return Path.GetFullPath(path);
+        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, path));
     }
 
     private async Task<ServiceInfo?> GetServiceByNameAsync(string serviceName)
@@ -234,6 +426,7 @@ public class ServiceManager : IServiceManager
                     StartupType = sc.StartType.ToString(),
                     ProcessId = processId,
                     BinaryPath = config?.BinaryPath ?? string.Empty,
+                    BinaryPathAlt = config?.BinaryPathAlt,
                     IsCritical = config?.Critical ?? false
                 };
 
@@ -264,6 +457,7 @@ public class ServiceManager : IServiceManager
                         StartupType = "未登録",
                         ProcessId = 0,
                         BinaryPath = config.BinaryPath ?? string.Empty,
+                        BinaryPathAlt = config.BinaryPathAlt,
                         IsCritical = config.Critical
                     };
                 }

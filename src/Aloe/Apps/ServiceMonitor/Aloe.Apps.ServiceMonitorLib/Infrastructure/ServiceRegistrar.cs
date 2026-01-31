@@ -17,7 +17,7 @@ public class ServiceRegistrar : IServiceRegistrar
     {
         try
         {
-            var binaryPath = ResolveBinaryPath(request.BinaryPath);
+            var binaryPath = ResolveBinaryPath(request.BinaryPath, request.BinaryPathAlt);
             ValidateRequest(request, binaryPath);
 
             var scCreateCommand = $"create \"{request.ServiceName}\" binPath= \"{binaryPath}\"";
@@ -98,13 +98,29 @@ public class ServiceRegistrar : IServiceRegistrar
         }
     }
 
-    private static string ResolveBinaryPath(string binaryPath)
+    private static string ResolveBinaryPath(string binaryPath, string? binaryPathAlt)
     {
-        if (string.IsNullOrWhiteSpace(binaryPath))
-            return binaryPath;
-        if (Path.IsPathRooted(binaryPath))
-            return Path.GetFullPath(binaryPath);
-        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, binaryPath));
+        var primary = ResolveSinglePath(binaryPath);
+        if (!string.IsNullOrEmpty(primary) && File.Exists(primary))
+            return primary;
+        if (!string.IsNullOrWhiteSpace(binaryPathAlt))
+        {
+            var alt = ResolveSinglePath(binaryPathAlt);
+            if (File.Exists(alt))
+                return alt;
+            if (string.IsNullOrEmpty(primary))
+                return alt; // バリデーションエラー用に解決済みパスを返す
+        }
+        return primary;
+    }
+
+    private static string ResolveSinglePath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return path;
+        if (Path.IsPathRooted(path))
+            return Path.GetFullPath(path);
+        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, path));
     }
 
     private void ValidateRequest(ServiceRegistrationRequest request, string resolvedBinaryPath)
@@ -119,12 +135,12 @@ public class ServiceRegistrar : IServiceRegistrar
             throw new ArgumentException("サービス名に無効な文字が含まれています", nameof(request.ServiceName));
         }
 
-        if (string.IsNullOrWhiteSpace(request.BinaryPath))
+        if (string.IsNullOrWhiteSpace(request.BinaryPath) && string.IsNullOrWhiteSpace(request.BinaryPathAlt))
         {
             throw new ArgumentException("バイナリパスは空にできません", nameof(request.BinaryPath));
         }
 
-        if (!System.IO.File.Exists(resolvedBinaryPath))
+        if (!File.Exists(resolvedBinaryPath))
         {
             throw new FileNotFoundException($"バイナリファイルが見つかりません: {resolvedBinaryPath}");
         }

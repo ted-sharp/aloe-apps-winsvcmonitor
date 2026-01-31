@@ -25,9 +25,10 @@
 
     @if (!string.IsNullOrEmpty(statusMessage))
     {
-        <aside role="alert" class="alert @(statusMessageIsSuccess ? "alert-success" : "alert-danger") alert-sm status-toast">
-            @statusMessage
-        </aside>
+        <article role="alert" class="@(statusMessageIsSuccess ? "" : "")">
+            <p>@statusMessage</p>
+            <button @onclick="ClearStatusMessage">閉じる</button>
+        </article>
     }
 
     @if (services == null)
@@ -161,19 +162,25 @@
 
     private async Task StartService(string name)
     {
-        await ServiceManager.StartServiceAsync(name);
+        var result = await ServiceManager.StartServiceAsync(name);
+        if (!result.Success)
+            ShowStatusMessage($"起動に失敗しました: {result.Message}", false);
         await RefreshServices();
     }
 
     private async Task StopService(string name)
     {
-        await ServiceManager.StopServiceAsync(name);
+        var result = await ServiceManager.StopServiceAsync(name);
+        if (!result.Success)
+            ShowStatusMessage($"停止に失敗しました: {result.Message}", false);
         await RefreshServices();
     }
 
     private async Task RestartService(string name)
     {
-        await ServiceManager.RestartServiceAsync(name);
+        var result = await ServiceManager.RestartServiceAsync(name);
+        if (!result.Success)
+            ShowStatusMessage($"再起動に失敗しました: {result.Message}", false);
         await RefreshServices();
     }
 
@@ -206,7 +213,8 @@
             {
                 ServiceName = service.ServiceName,
                 DisplayName = service.DisplayName,
-                BinaryPath = service.BinaryPath
+                BinaryPath = service.BinaryPath,
+                BinaryPathAlt = service.BinaryPathAlt
             };
             var result = await ServiceRegistrar.RegisterServiceAsync(request);
             if (result.Success)
@@ -229,11 +237,21 @@
     {
         statusMessage = message;
         statusMessageIsSuccess = isSuccess;
-        _ = Task.Delay(4000).ContinueWith(_ =>
+
+        // 成功メッセージのみ自動消去、エラーメッセージは手動で閉じる必要
+        if (isSuccess)
         {
-            statusMessage = string.Empty;
-            InvokeAsync(StateHasChanged);
-        });
+            _ = Task.Delay(4000).ContinueWith(_ =>
+            {
+                statusMessage = string.Empty;
+                InvokeAsync(StateHasChanged);
+            });
+        }
+    }
+
+    private void ClearStatusMessage()
+    {
+        statusMessage = string.Empty;
     }
 
     private async Task StartAllServices()

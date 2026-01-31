@@ -9,6 +9,7 @@ public class ServiceInfo
     public string StartupType { get; set; } = "Unknown";
     public int ProcessId { get; set; } = 0;
     public string BinaryPath { get; set; } = string.Empty;
+    public string? BinaryPathAlt { get; set; }
     public bool IsCritical { get; set; } = false;
 
     /// <summary>

@@ -8,6 +8,10 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 
+// WindowsサービスはSCM起動時に作業ディレクトリがSystem32になるため、
+// 実行ファイルのディレクトリに明示的に変更する
+Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.

@@ -139,7 +139,8 @@
             {
                 ServiceName = service.ServiceName,
                 DisplayName = service.DisplayName,
-                BinaryPath = service.BinaryPath
+                BinaryPath = service.BinaryPath,
+                BinaryPathAlt = service.BinaryPathAlt
             };
             await ServiceRegistrar.RegisterServiceAsync(request);
             ShowStatusMessage("サービスを登録しました", true);
