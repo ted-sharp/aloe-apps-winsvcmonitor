@@ -7,15 +7,7 @@
     <article class="service-card" style="display: grid; grid-template-columns: 1fr auto; gap: 2rem; align-items: start">
         <div>
             <header style="margin-bottom: 1rem">
-                <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem">
-                    <div>
-                        <h5 class="mb-1">@Service.DisplayName</h5>
-                        <small>@Service.ServiceName</small>
-                    </div>
-                    <mark class="badge @GetStatusBadgeClass()" style="white-space: nowrap">
-                        @GetStatusText()
-                    </mark>
-                </div>
+                <h5 class="mb-1">@Service.DisplayName <small style="font-weight: normal; font-size: 0.75em">(@Service.ServiceName)</small></h5>
             </header>
 
             @if (!string.IsNullOrEmpty(Service.Description))
@@ -23,11 +15,7 @@
                 <p style="margin: 0 0 1rem 0; color: var(--muted-color); font-size: 0.9rem">@Service.Description</p>
             }
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem">
-                <div class="service-detail-item">
-                    <span class="service-detail-label">ステータス</span>
-                    <span class="service-detail-value">@GetStatusText()</span>
-                </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem">
                 <div class="service-detail-item">
                     <span class="service-detail-label">起動タイプ</span>
                     <span class="service-detail-value">@Service.StartupType</span>
@@ -76,6 +64,9 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 200px">
+            <mark class="badge @GetStatusBadgeClass() btn-fixed-sm">
+                @GetStatusText()
+            </mark>
             <ServiceControlButtons Service="Service" OnOperationComplete="OnOperationComplete" />
             <button type="button" class="secondary btn-xs" @onclick="InitiateUnregister" disabled="@(Service?.Status != ServiceStatus.Stopped || isUnregistering)" title="停止状態のときのみ解除できます">
                 @if (isUnregistering)
@@ -119,8 +110,8 @@
         return Service?.Status switch
         {
             ServiceStatus.Running => "実行中",
-            ServiceStatus.Stopped => "停止中",
-            ServiceStatus.Paused => "一時停止中",
+            ServiceStatus.Stopped => "停止",
+            ServiceStatus.Paused => "一時停止",
             ServiceStatus.Starting => "起動中",
             ServiceStatus.Stopping => "停止中",
             ServiceStatus.Continuing => "再開中",
@@ -137,7 +128,9 @@
             ServiceStatus.Stopped => "danger",
             ServiceStatus.Paused => "warning",
             ServiceStatus.Starting => "info",
-            ServiceStatus.Stopping => "secondary",
+            ServiceStatus.Stopping => "warning",
+            ServiceStatus.Continuing => "info",
+            ServiceStatus.Pausing => "warning",
             _ => "secondary"
         };
     }

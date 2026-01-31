@@ -2,76 +2,60 @@
 @using Aloe.Apps.ServiceMonitorLib.Interfaces
 @inject IServiceManager ServiceManager
 
+<ConfirmationModal
+    Title="@GetConfirmTitle()"
+    Message="@GetConfirmMessage()"
+    ConfirmButtonText="@GetConfirmButtonText()"
+    ConfirmButtonClass="@GetConfirmButtonClass()"
+    OnConfirm="@ConfirmAction" />
+
 @if (Service != null)
 {
-    @if (pendingConfirmAction != null)
-    {
-        <aside class="alert alert-warning" role="alert" style="margin-bottom: 0">
-            <div class="mb-2">
-                @GetConfirmMessage()
-            </div>
-            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap">
-                @if (pendingConfirmAction == "stop")
-                {
-                    <button type="button" class="danger btn-sm" @onclick="ConfirmStopService">はい、停止する</button>
-                }
-                @if (pendingConfirmAction == "restart")
-                {
-                    <button type="button" class="warning btn-sm" @onclick="ConfirmRestartService">はい、再起動する</button>
-                }
-                <button type="button" class="secondary btn-sm" @onclick="CancelConfirmation">キャンセル</button>
-            </div>
-        </aside>
-    }
-    else
-    {
-        @if (Service.Status != ServiceStatus.Running)
-        {
-            <div style="display: flex; gap: 0.5rem; width: 100%">
-                <button type="button" class="success btn-sm" @onclick="() => StartService()" disabled="@isProcessing" style="flex: 1">
-                    @if (isProcessing && currentAction == "start")
-                    {
-                        <span class="spinner" role="status" aria-hidden="true"></span>
-                    }
-                    起動
-                </button>
-            </div>
-        }
-
-        @if (Service.Status == ServiceStatus.Running)
-        {
-            <div style="display: flex; gap: 0.5rem; width: 100%; align-items: center">
-                <button type="button" class="success btn-sm" disabled="@isProcessing" style="flex: 1">
-                    実行中
-                </button>
-                <div style="display: flex; gap: 0.25rem">
-                    <button type="button" class="danger btn-xs" @onclick="InitiateStopService" disabled="@isProcessing" title="停止">
-                        @if (isProcessing && currentAction == "stop")
-                        {
-                            <span class="spinner" role="status" aria-hidden="true"></span>
-                        }
-                        else
-                        {
-                            <span>停止</span>
-                        }
-                    </button>
-                    <button type="button" class="warning btn-xs" @onclick="InitiateRestartService" disabled="@isProcessing" title="再起動">
-                        @if (isProcessing && currentAction == "restart")
-                        {
-                            <span class="spinner" role="status" aria-hidden="true"></span>
-                        }
-                        else
-                        {
-                            <span>再起動</span>
-                        }
-                    </button>
-                </div>
-            </div>
-        }
-    }
+    <div style="display: flex; gap: 0.25rem; width: 100%; margin-bottom: 0">
+        <button type="button" class="success btn-xs btn-fixed-sm" @onclick="() => StartService()" disabled="@(isProcessing || Service.Status != ServiceStatus.Stopped)" title="起動">
+            @if (isProcessing && currentAction == "start")
+            {
+                <span class="spinner" role="status" aria-hidden="true"></span>
+            }
+            else
+            {
+                <span>起動</span>
+            }
+        </button>
+        <button type="button" class="danger btn-xs btn-fixed-sm" @onclick="InitiateStopService" popovertarget="service-confirm-modal" disabled="@(isProcessing || Service.Status != ServiceStatus.Running)" title="停止">
+            @if (isProcessing && currentAction == "stop")
+            {
+                <span class="spinner" role="status" aria-hidden="true"></span>
+            }
+            else
+            {
+                <span>停止</span>
+            }
+        </button>
+        <button type="button" class="warning btn-xs btn-fixed-sm" @onclick="InitiateRestartService" popovertarget="service-confirm-modal" disabled="@(isProcessing || Service.Status != ServiceStatus.Running)" title="再起動">
+            @if (isProcessing && currentAction == "restart")
+            {
+                <span class="spinner" role="status" aria-hidden="true"></span>
+            }
+            else
+            {
+                <span>再起動</span>
+            }
+        </button>
+    </div>
 }
 
 @{
+    string GetConfirmTitle()
+    {
+        return pendingConfirmAction switch
+        {
+            "stop" => "サービスを停止",
+            "restart" => "サービスを再起動",
+            _ => string.Empty
+        };
+    }
+
     string GetConfirmMessage()
     {
         return pendingConfirmAction switch
@@ -79,6 +63,26 @@
             "stop" => $"'{Service?.DisplayName}' を停止します。よろしいですか？",
             "restart" => $"'{Service?.DisplayName}' を再起動します。よろしいですか？",
             _ => string.Empty
+        };
+    }
+
+    string GetConfirmButtonText()
+    {
+        return pendingConfirmAction switch
+        {
+            "stop" => "停止する",
+            "restart" => "再起動する",
+            _ => "確認"
+        };
+    }
+
+    string GetConfirmButtonClass()
+    {
+        return pendingConfirmAction switch
+        {
+            "stop" => "danger",
+            "restart" => "warning",
+            _ => "primary"
         };
     }
 }
@@ -113,44 +117,32 @@
         pendingConfirmAction = "stop";
     }
 
-    private async Task ConfirmStopService()
-    {
-        if (Service == null) return;
-        pendingConfirmAction = null;
-
-        isProcessing = true;
-        currentAction = "stop";
-
-        var result = await ServiceManager.StopServiceAsync(Service.ServiceName);
-        await OnOperationComplete.InvokeAsync((result.Message, result.Success));
-
-        isProcessing = false;
-        currentAction = string.Empty;
-    }
-
     private void InitiateRestartService()
     {
         if (Service == null) return;
         pendingConfirmAction = "restart";
     }
 
-    private async Task ConfirmRestartService()
+    private async Task ConfirmAction()
     {
-        if (Service == null) return;
+        if (Service == null || pendingConfirmAction == null) return;
+
+        var action = pendingConfirmAction;
         pendingConfirmAction = null;
-
         isProcessing = true;
-        currentAction = "restart";
+        currentAction = action;
 
-        var result = await ServiceManager.RestartServiceAsync(Service.ServiceName);
+        ServiceOperationResult result = action switch
+        {
+            "stop" => await ServiceManager.StopServiceAsync(Service.ServiceName),
+            "restart" => await ServiceManager.RestartServiceAsync(Service.ServiceName),
+            _ => new ServiceOperationResult { Success = false, Message = "不正なアクション" }
+        };
+
         await OnOperationComplete.InvokeAsync((result.Message, result.Success));
 
         isProcessing = false;
         currentAction = string.Empty;
     }
 
-    private void CancelConfirmation()
-    {
-        pendingConfirmAction = null;
-    }
 }

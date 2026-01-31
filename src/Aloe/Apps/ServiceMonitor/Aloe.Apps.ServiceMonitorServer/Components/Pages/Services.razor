@@ -5,6 +5,7 @@
 @attribute [Authorize]
 @inject IServiceManager ServiceManager
 @rendermode InteractiveServer
+@implements IAsyncDisposable
 
 <PageTitle>サービス監視</PageTitle>
 
@@ -12,8 +13,17 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem">
         <h1>Windows サービス監視</h1>
         <div style="display: flex; gap: 0.5rem">
-            <button class="btn-sm" @onclick="RefreshServices" disabled="@isLoadingServices">
+            <button class="btn-sm btn-fixed-lg" @onclick="RefreshServices" disabled="@isLoadingServices">
                 <span class="oi oi-reload" aria-hidden="true"></span> リフレッシュ
+            </button>
+            <button class="success btn-sm btn-fixed-lg" @onclick="StartAllServices" disabled="@isLoadingServices">
+                すべて起動
+            </button>
+            <button class="danger btn-sm btn-fixed-lg" @onclick="StopAllServices" disabled="@isLoadingServices">
+                すべて停止
+            </button>
+            <button class="warning btn-sm btn-fixed-lg" @onclick="RestartAllServices" disabled="@isLoadingServices">
+                すべて再起動
             </button>
         </div>
     </div>
@@ -54,10 +64,32 @@
     private bool isLoadingServices = false;
     private string statusMessage = string.Empty;
     private bool statusMessageIsSuccess = false;
+    private PeriodicTimer? pollingTimer;
 
     protected override async Task OnInitializedAsync()
     {
         await RefreshServices();
+        StartPolling();
+    }
+
+    private void StartPolling()
+    {
+        pollingTimer = new PeriodicTimer(TimeSpan.FromSeconds(3));
+        _ = PollServicesAsync();
+    }
+
+    private async Task PollServicesAsync()
+    {
+        while (await pollingTimer!.WaitForNextTickAsync())
+        {
+            await InvokeAsync(async () =>
+            {
+                if (!isLoadingServices)
+                {
+                    await RefreshServices();
+                }
+            });
+        }
     }
 
     private async Task RefreshServices()
@@ -98,6 +130,114 @@
         }
     }
 
+    private async Task StartAllServices()
+    {
+        if (services == null || services.Count == 0) return;
+        isLoadingServices = true;
+        try
+        {
+            var stoppedServices = services.Where(s => s.Status != ServiceStatus.Running).ToList();
+            int successCount = 0;
+            int failureCount = 0;
+
+            foreach (var service in stoppedServices)
+            {
+                var result = await ServiceManager.StartServiceAsync(service.ServiceName);
+                if (result.Success)
+                    successCount++;
+                else
+                    failureCount++;
+            }
+
+            if (stoppedServices.Count == 0)
+                ShowStatusMessage("起動するサービスはありません", false);
+            else
+                ShowStatusMessage($"{successCount}個を起動しました{(failureCount > 0 ? $"、{failureCount}個失敗" : "")}", failureCount == 0);
+
+            await RefreshServices();
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"エラーが発生しました: {ex.Message}", false);
+        }
+        finally
+        {
+            isLoadingServices = false;
+        }
+    }
+
+    private async Task StopAllServices()
+    {
+        if (services == null || services.Count == 0) return;
+        isLoadingServices = true;
+        try
+        {
+            var runningServices = services.Where(s => s.Status == ServiceStatus.Running).ToList();
+            int successCount = 0;
+            int failureCount = 0;
+
+            foreach (var service in runningServices)
+            {
+                var result = await ServiceManager.StopServiceAsync(service.ServiceName);
+                if (result.Success)
+                    successCount++;
+                else
+                    failureCount++;
+            }
+
+            if (runningServices.Count == 0)
+                ShowStatusMessage("停止するサービスはありません", false);
+            else
+                ShowStatusMessage($"{successCount}個を停止しました{(failureCount > 0 ? $"、{failureCount}個失敗" : "")}", failureCount == 0);
+
+            await RefreshServices();
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"エラーが発生しました: {ex.Message}", false);
+        }
+        finally
+        {
+            isLoadingServices = false;
+        }
+    }
+
+    private async Task RestartAllServices()
+    {
+        if (services == null || services.Count == 0) return;
+        isLoadingServices = true;
+        try
+        {
+            var runningServices = services.Where(s => s.Status == ServiceStatus.Running).ToList();
+            int successCount = 0;
+            int failureCount = 0;
+
+            foreach (var service in runningServices)
+            {
+                var result = await ServiceManager.RestartServiceAsync(service.ServiceName);
+                if (result.Success)
+                    successCount++;
+                else
+                    failureCount++;
+            }
+
+            if (runningServices.Count == 0)
+                ShowStatusMessage("再起動するサービスはありません", false);
+            else
+                ShowStatusMessage($"{successCount}個を再起動しました{(failureCount > 0 ? $"、{failureCount}個失敗" : "")}", failureCount == 0);
+
+            await RefreshServices();
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"エラーが発生しました: {ex.Message}", false);
+        }
+        finally
+        {
+            isLoadingServices = false;
+        }
+    }
+
     private void ShowStatusMessage(string message, bool isSuccess)
     {
         statusMessage = message;
@@ -107,5 +247,13 @@
             statusMessage = string.Empty;
             InvokeAsync(StateHasChanged);
         });
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (pollingTimer is not null)
+        {
+            pollingTimer.Dispose();
+        }
     }
 }
