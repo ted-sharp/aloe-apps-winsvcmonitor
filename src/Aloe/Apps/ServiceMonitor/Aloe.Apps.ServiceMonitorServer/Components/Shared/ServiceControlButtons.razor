@@ -11,8 +11,8 @@
 
 @if (Service != null)
 {
-    <div style="display: flex; gap: 0.25rem; width: 100%; margin-bottom: 0">
-        <button type="button" class="success btn-xs btn-fixed-sm" @onclick="() => StartService()" disabled="@(isProcessing || Service.Status != ServiceStatus.Stopped)" title="起動">
+    <div class="button-group compact">
+        <button type="button" class="success btn-xs" @onclick="() => StartService()" disabled="@(isProcessing || Service.Status != ServiceStatus.Stopped)" title="起動">
             @if (isProcessing && currentAction == "start")
             {
                 <span class="spinner" role="status" aria-hidden="true"></span>
@@ -22,7 +22,7 @@
                 <span>起動</span>
             }
         </button>
-        <button type="button" class="danger btn-xs btn-fixed-sm" @onclick="InitiateStopService" popovertarget="service-confirm-modal" disabled="@(isProcessing || Service.Status != ServiceStatus.Running)" title="停止">
+        <button type="button" class="danger btn-xs" @onclick="InitiateStopService" popovertarget="service-confirm-modal" disabled="@(isProcessing || Service.Status != ServiceStatus.Running)" title="停止">
             @if (isProcessing && currentAction == "stop")
             {
                 <span class="spinner" role="status" aria-hidden="true"></span>
@@ -32,7 +32,7 @@
                 <span>停止</span>
             }
         </button>
-        <button type="button" class="warning btn-xs btn-fixed-sm" @onclick="InitiateRestartService" popovertarget="service-confirm-modal" disabled="@(isProcessing || Service.Status != ServiceStatus.Running)" title="再起動">
+        <button type="button" class="warning btn-xs" @onclick="InitiateRestartService" popovertarget="service-confirm-modal" disabled="@(isProcessing || Service.Status != ServiceStatus.Running)" title="再起動">
             @if (isProcessing && currentAction == "restart")
             {
                 <span class="spinner" role="status" aria-hidden="true"></span>

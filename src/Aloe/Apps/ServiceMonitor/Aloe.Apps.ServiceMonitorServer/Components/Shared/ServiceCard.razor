@@ -4,18 +4,18 @@
 
 @if (Service != null)
 {
-    <article class="service-card" style="display: grid; grid-template-columns: 1fr auto; gap: 2rem; align-items: start">
+    <article class="service-card">
         <div>
-            <header style="margin-bottom: 1rem">
-                <h5 class="mb-1">@Service.DisplayName <small style="font-weight: normal; font-size: 0.75em">(@Service.ServiceName)</small></h5>
+            <header>
+                <h5>@Service.DisplayName <small>(@Service.ServiceName)</small></h5>
             </header>
 
             @if (!string.IsNullOrEmpty(Service.Description))
             {
-                <p style="margin: 0 0 1rem 0; color: var(--muted-color); font-size: 0.9rem">@Service.Description</p>
+                <p class="description">@Service.Description</p>
             }
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem">
+            <div class="service-details">
                 <div class="service-detail-item">
                     <span class="service-detail-label">起動タイプ</span>
                     <span class="service-detail-value">@Service.StartupType</span>
@@ -63,10 +63,8 @@
             </div>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 200px">
-            <mark class="badge @GetStatusBadgeClass() btn-fixed-sm">
-                @GetStatusText()
-            </mark>
+        <div class="card-actions">
+            <mark class="badge @GetStatusBadgeClass()">@GetStatusText()</mark>
             <ServiceControlButtons Service="Service" OnOperationComplete="OnOperationComplete" />
             <button type="button" class="secondary btn-xs" @onclick="InitiateUnregister" disabled="@(Service?.Status != ServiceStatus.Stopped || isUnregistering)" title="停止状態のときのみ解除できます">
                 @if (isUnregistering)
@@ -79,9 +77,9 @@
 
         @if (showUnregisterConfirm)
         {
-            <aside class="alert alert-warning" role="alert" style="margin-top: 1rem; grid-column: 1 / -1">
-                <div style="margin-bottom: 0.5rem">サービスを監視対象から解除します。</div>
-                <div style="display: flex; gap: 0.5rem">
+            <aside class="alert alert-warning unregister-confirm" role="alert">
+                <p>サービスを監視対象から解除します。</p>
+                <div class="button-group">
                     <button type="button" class="danger btn-xs" @onclick="ConfirmUnregister">解除</button>
                     <button type="button" class="secondary btn-xs" @onclick="CancelUnregister">キャンセル</button>
                 </div>

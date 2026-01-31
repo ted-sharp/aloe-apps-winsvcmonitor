@@ -62,31 +62,18 @@ a[role="button"].warning:hover {
     background-color: #e0a800;
 }
 
-button.info,
-a[role="button"].info {
-    background-color: #17a2b8;
-}
-
-button.info:hover,
-a[role="button"].info:hover {
-    background-color: #138496;
-}
-
-button.btn-sm,
-a[role="button"].btn-sm {
+button.btn-sm {
     font-size: 0.875rem;
     padding: 0.375rem 0.75rem;
 }
 
-button.btn-xs,
-a[role="button"].btn-xs {
+button.btn-xs {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
 }
 
 /* Disabled button states */
-button:disabled,
-a[role="button"]:disabled {
+button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     background-color: var(--form-element-disabled-background-color, #e9ecef);
@@ -94,28 +81,19 @@ a[role="button"]:disabled {
     border-color: var(--form-element-disabled-border-color, #dee2e6);
 }
 
-button.success:disabled,
-a[role="button"].success:disabled {
+button.success:disabled {
     background-color: #a8d5ba;
     color: #fff;
 }
 
-button.danger:disabled,
-a[role="button"].danger:disabled {
+button.danger:disabled {
     background-color: #f5bcb8;
     color: #fff;
 }
 
-button.warning:disabled,
-a[role="button"].warning:disabled {
+button.warning:disabled {
     background-color: #ffeaa7;
     color: #000;
-}
-
-button.info:disabled,
-a[role="button"].info:disabled {
-    background-color: #a8d7dd;
-    color: #fff;
 }
 
 /* 4. Badge Component */
@@ -126,7 +104,9 @@ mark.badge {
     font-size: 0.9rem;
     background-color: var(--color-gray-6);
     color: var(--color-gray-0);
-    display: inline-block;
+    display: block;
+    text-align: center;
+    white-space: nowrap;
 }
 
 mark.badge.success {
@@ -190,11 +170,6 @@ aside[role="alert"].alert-sm {
     font-size: 0.875rem;
 }
 
-aside[role="alert"].alert-dismissible {
-    padding-right: 3.75rem;
-    position: relative;
-}
-
 /* 6. Spinner / Loading */
 .spinner {
     display: inline-block;
@@ -212,94 +187,34 @@ aside[role="alert"].alert-dismissible {
     }
 }
 
-/* 7. Spacing Utilities */
-.mb-0 { margin-bottom: 0; }
-.mb-1 { margin-bottom: 0.5rem; }
-.mb-2 { margin-bottom: 1rem; }
-.mb-3 { margin-bottom: 1.5rem; }
-.mb-4 { margin-bottom: 2rem; }
-.mb-5 { margin-bottom: 3rem; }
-
-.mt-0 { margin-top: 0; }
-.mt-1 { margin-top: 0.5rem; }
-.mt-2 { margin-top: 1rem; }
-.mt-3 { margin-top: 1.5rem; }
-.mt-4 { margin-top: 2rem; }
-.mt-5 { margin-top: 3rem; }
-
-/* 8. Form Floating Labels */
-.form-floating > .form-control-plaintext::placeholder,
-.form-floating > .form-control::placeholder {
-    color: var(--muted-color);
-    text-align: end;
-}
-
-.form-floating > .form-control-plaintext:focus::placeholder,
-.form-floating > .form-control:focus::placeholder {
-    text-align: start;
-}
-
-/* 9. Additional Utilities */
-.darker-border-checkbox.form-check-input {
-    border-color: #929292;
-}
-
-/* 10. Grid Layout for Service Cards */
-.service-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1rem;
-}
-
+/* 7. Service Card */
 .service-card {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1.5rem;
+    align-items: start;
     border: 1px solid var(--form-element-border-color);
     border-radius: 0.375rem;
     padding: 1rem;
     background-color: var(--card-background-color, white);
 }
 
-/* 11. Modal and Dialog Styles */
-dialog {
-    border-radius: 0.375rem;
-    border: 1px solid var(--form-element-border-color);
-    padding: 1.5rem;
+.service-card header small {
+    font-weight: normal;
+    font-size: 0.75em;
 }
 
-dialog::backdrop {
-    background-color: rgba(0, 0, 0, 0.5);
+.service-card .description {
+    color: var(--muted-color);
+    font-size: 0.9rem;
 }
 
-.modal-header {
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--form-element-border-color);
-}
-
-.modal-body {
-    margin-bottom: 1rem;
-    max-height: 60vh;
-    overflow-y: auto;
-}
-
-.modal-footer {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--form-element-border-color);
-}
-
-/* 12. Service Info Grid within Cards */
+/* 10. Service Detail Grid */
 .service-details {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.75rem;
     font-size: 0.9rem;
-    margin-bottom: 1rem;
 }
 
 .service-detail-item {
@@ -317,51 +232,75 @@ dialog::backdrop {
     font-weight: 500;
 }
 
-/* 13. Button Group Layout */
+/* 11. Card Actions (right panel) */
+.card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 200px;
+}
+
+/* 12. Button Group */
 .button-group {
     display: flex;
     gap: 0.5rem;
     align-items: center;
 }
 
-.button-group.spread {
-    justify-content: space-between;
-}
-
 .button-group.compact {
     gap: 0.25rem;
 }
 
-/* 14. Popover Backdrop Blur */
+.button-group.compact button {
+    flex: 1;
+    white-space: nowrap;
+}
+
+/* 13. Page Header */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.page-header h1 {
+    margin-bottom: 0;
+}
+
+.page-header .button-group button {
+    min-width: 120px;
+}
+
+/* 14. Service List */
+.service-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+/* 15. Status Toast */
+.status-toast {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    max-width: 400px;
+}
+
+/* 16. Unregister Confirm */
+.unregister-confirm {
+    grid-column: 1 / -1;
+}
+
+/* 15. Popover Styling */
 [popover]::backdrop {
     backdrop-filter: blur(4px);
     background-color: rgba(0, 0, 0, 0.3);
 }
 
-/* 15. Popover Modern Styling */
 [popover] {
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 0.75rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* 16. Fixed Size Buttons */
-.btn-fixed-lg {
-    min-width: 120px;
-}
-
-.btn-fixed-sm {
-    min-width: 70px;
-    min-height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-    white-space: nowrap;
-}
-
-mark.badge.btn-fixed-sm {
-    width: 100%;
-    flex: none;
-    text-align: center;
 }
