@@ -6,10 +6,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>ServiceMonitorServer</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Aloe.Apps.ServiceMonitorLib/Aloe.Apps.ServiceMonitorLib.csproj" />
+    <ProjectReference Include="..\Aloe.Apps.DummyService\Aloe.Apps.DummyService.csproj" />
   </ItemGroup>
 
   <ItemGroup>
