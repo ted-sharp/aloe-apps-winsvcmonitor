@@ -211,16 +211,16 @@ public class ServiceManager : IServiceManager
     {
         return await Task.Run(async () =>
         {
+            // 設定は例外前に取得（未登録時も一覧表示するため）
+            var configFromSettings = _options.MonitoredServices.FirstOrDefault(x =>
+                x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+            var configFromRepo = (await _repository.GetAllAsync()).FirstOrDefault(x =>
+                x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+            var config = configFromSettings ?? configFromRepo;
+
             try
             {
                 var sc = new ServiceController(serviceName);
-
-                // Try to get config from both sources
-                var configFromSettings = _options.MonitoredServices.FirstOrDefault(x =>
-                    x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
-                var configFromRepo = (await _repository.GetAllAsync()).FirstOrDefault(x =>
-                    x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
-                var config = configFromSettings ?? configFromRepo;
 
                 var processId = _win32Api.GetProcessId(serviceName) ?? 0;
                 var status = ConvertStatus(sc.Status);
@@ -252,6 +252,21 @@ public class ServiceManager : IServiceManager
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "サービス '{ServiceName}' の情報取得に失敗しました", serviceName);
+                // 設定にあれば未登録でも一覧に表示（登録ボタンから sc create 可能）
+                if (config != null)
+                {
+                    return new ServiceInfo
+                    {
+                        ServiceName = serviceName,
+                        DisplayName = config.DisplayName,
+                        Description = config.Description,
+                        Status = ServiceStatus.Unknown,
+                        StartupType = "未登録",
+                        ProcessId = 0,
+                        BinaryPath = config.BinaryPath ?? string.Empty,
+                        IsCritical = config.Critical
+                    };
+                }
                 return null;
             }
         });
@@ -446,7 +461,7 @@ public class ServiceManager : IServiceManager
     }
 
     /// <summary>
-    /// Deletes a Windows service completely (unregisters it and removes from monitoring).
+    /// Unregisters the Windows service only; the service remains in the monitoring list with status Unknown.
     /// </summary>
     public async Task<ServiceOperationResult> DeleteServiceAsync(string serviceName)
     {
@@ -487,11 +502,8 @@ public class ServiceManager : IServiceManager
                 return unregisterResult;
             }
 
-            // Remove from monitoring list
-            await _repository.RemoveAsync(serviceName);
-
-            _logger.LogInformation("サービス '{ServiceName}' が完全に削除されました", serviceName);
-            return ServiceOperationResult.SuccessResult($"サービス '{serviceName}' を削除しました");
+            _logger.LogInformation("サービス '{ServiceName}' を Windows から解除しました", serviceName);
+            return ServiceOperationResult.SuccessResult($"サービス '{serviceName}' を解除しました");
         }
         catch (Exception ex)
         {

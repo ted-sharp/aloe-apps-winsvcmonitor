@@ -66,6 +66,10 @@
         <div class="card-actions">
             <mark class="badge @GetStatusBadgeClass()">@GetStatusText()</mark>
             <ServiceControlButtons Service="Service" OnOperationComplete="OnOperationComplete" />
+            @if (Service?.StartupType == "未登録" && !string.IsNullOrEmpty(Service.BinaryPath))
+            {
+                <button type="button" class="contrast outline btn-xs" @onclick="InitiateRegister" title="Windows サービスとして登録">登録</button>
+            }
             <button type="button" class="secondary btn-xs" @onclick="InitiateUnregister" disabled="@(Service?.Status != ServiceStatus.Stopped || isUnregistering)" title="停止状態のときのみ解除できます">
                 @if (isUnregistering)
                 {
@@ -98,6 +102,9 @@
     [Parameter]
     public EventCallback<string> OnDeleteService { get; set; }
 
+    [Parameter]
+    public EventCallback<ServiceInfo> OnRegisterService { get; set; }
+
     private string operationMessage = string.Empty;
     private bool operationSuccess = false;
     private bool showUnregisterConfirm = false;
@@ -105,6 +112,8 @@
 
     private string GetStatusText()
     {
+        if (Service?.StartupType == "未登録")
+            return "未登録";
         return Service?.Status switch
         {
             ServiceStatus.Running => "実行中",
@@ -163,6 +172,12 @@
         await OnServiceChanged.InvokeAsync();
         await Task.Delay(3000);
         operationMessage = string.Empty;
+    }
+
+    private async Task InitiateRegister()
+    {
+        if (Service != null)
+            await OnRegisterService.InvokeAsync(Service);
     }
 
     private void InitiateUnregister()

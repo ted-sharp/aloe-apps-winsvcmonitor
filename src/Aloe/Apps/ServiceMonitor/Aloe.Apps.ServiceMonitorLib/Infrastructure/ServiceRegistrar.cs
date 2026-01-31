@@ -17,9 +17,10 @@ public class ServiceRegistrar : IServiceRegistrar
     {
         try
         {
-            ValidateRequest(request);
+            var binaryPath = ResolveBinaryPath(request.BinaryPath);
+            ValidateRequest(request, binaryPath);
 
-            var scCreateCommand = $"create \"{request.ServiceName}\" binPath= \"{request.BinaryPath}\"";
+            var scCreateCommand = $"create \"{request.ServiceName}\" binPath= \"{binaryPath}\"";
 
             if (!string.IsNullOrEmpty(request.DisplayName))
             {
@@ -97,7 +98,16 @@ public class ServiceRegistrar : IServiceRegistrar
         }
     }
 
-    private void ValidateRequest(ServiceRegistrationRequest request)
+    private static string ResolveBinaryPath(string binaryPath)
+    {
+        if (string.IsNullOrWhiteSpace(binaryPath))
+            return binaryPath;
+        if (Path.IsPathRooted(binaryPath))
+            return Path.GetFullPath(binaryPath);
+        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, binaryPath));
+    }
+
+    private void ValidateRequest(ServiceRegistrationRequest request, string resolvedBinaryPath)
     {
         if (string.IsNullOrWhiteSpace(request.ServiceName))
         {
@@ -114,9 +124,9 @@ public class ServiceRegistrar : IServiceRegistrar
             throw new ArgumentException("バイナリパスは空にできません", nameof(request.BinaryPath));
         }
 
-        if (!System.IO.File.Exists(request.BinaryPath))
+        if (!System.IO.File.Exists(resolvedBinaryPath))
         {
-            throw new FileNotFoundException($"バイナリファイルが見つかりません: {request.BinaryPath}");
+            throw new FileNotFoundException($"バイナリファイルが見つかりません: {resolvedBinaryPath}");
         }
     }
 

@@ -23,6 +23,13 @@
         <button class="warning" @onclick="RestartAllServices" disabled="@isLoadingServices">すべて再起動</button>
     </div>
 
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <aside role="alert" class="alert @(statusMessageIsSuccess ? "alert-success" : "alert-danger") alert-sm status-toast">
+            @statusMessage
+        </aside>
+    }
+
     @if (services == null)
     {
         <article aria-busy="true">ロード中...</article>
@@ -121,6 +128,8 @@
 @code {
     private List<ServiceInfo>? services;
     private bool isLoadingServices = false;
+    private string statusMessage = string.Empty;
+    private bool statusMessageIsSuccess = false;
     private PeriodicTimer? pollingTimer;
 
     protected override async Task OnInitializedAsync()
@@ -170,20 +179,61 @@
 
     private async Task DeleteService(string name)
     {
-        await ServiceManager.DeleteServiceAsync(name);
-        await RefreshServices();
+        try
+        {
+            var result = await ServiceManager.DeleteServiceAsync(name);
+            if (result.Success)
+            {
+                ShowStatusMessage("サービスを解除しました", true);
+                await RefreshServices();
+            }
+            else
+            {
+                ShowStatusMessage($"解除に失敗しました: {result.Message}", false);
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"解除に失敗しました: {ex.Message}", false);
+        }
     }
 
     private async Task RegisterService(ServiceInfo service)
     {
-        var request = new ServiceRegistrationRequest
+        try
         {
-            ServiceName = service.ServiceName,
-            DisplayName = service.DisplayName,
-            BinaryPath = service.BinaryPath
-        };
-        await ServiceRegistrar.RegisterServiceAsync(request);
-        await RefreshServices();
+            var request = new ServiceRegistrationRequest
+            {
+                ServiceName = service.ServiceName,
+                DisplayName = service.DisplayName,
+                BinaryPath = service.BinaryPath
+            };
+            var result = await ServiceRegistrar.RegisterServiceAsync(request);
+            if (result.Success)
+            {
+                ShowStatusMessage("サービスを登録しました", true);
+                await RefreshServices();
+            }
+            else
+            {
+                ShowStatusMessage($"登録に失敗しました: {result.Message}", false);
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"登録に失敗しました: {ex.Message}", false);
+        }
+    }
+
+    private void ShowStatusMessage(string message, bool isSuccess)
+    {
+        statusMessage = message;
+        statusMessageIsSuccess = isSuccess;
+        _ = Task.Delay(4000).ContinueWith(_ =>
+        {
+            statusMessage = string.Empty;
+            InvokeAsync(StateHasChanged);
+        });
     }
 
     private async Task StartAllServices()
@@ -212,6 +262,8 @@
 
     private string GetStatusText(ServiceInfo service)
     {
+        if (service.StartupType == "未登録")
+            return "未登録";
         return service.Status switch
         {
             ServiceStatus.Running => "実行中",

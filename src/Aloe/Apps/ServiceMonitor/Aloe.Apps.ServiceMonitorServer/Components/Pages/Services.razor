@@ -4,6 +4,7 @@
 @using Aloe.Apps.ServiceMonitorServer.Components.Shared
 @attribute [Authorize]
 @inject IServiceManager ServiceManager
+@inject IServiceRegistrar ServiceRegistrar
 @rendermode InteractiveServer
 @implements IAsyncDisposable
 
@@ -46,7 +47,7 @@
         <div class="service-list">
             @foreach (var service in services)
             {
-                <ServiceCard Service="service" OnServiceChanged="RefreshServices" OnDeleteService="HandleDeleteService" />
+                <ServiceCard Service="service" OnServiceChanged="RefreshServices" OnDeleteService="HandleDeleteService" OnRegisterService="HandleRegisterService" />
             }
         </div>
     }
@@ -127,6 +128,26 @@
         catch (Exception ex)
         {
             ShowStatusMessage($"エラーが発生しました: {ex.Message}", false);
+        }
+    }
+
+    private async Task HandleRegisterService(ServiceInfo service)
+    {
+        try
+        {
+            var request = new ServiceRegistrationRequest
+            {
+                ServiceName = service.ServiceName,
+                DisplayName = service.DisplayName,
+                BinaryPath = service.BinaryPath
+            };
+            await ServiceRegistrar.RegisterServiceAsync(request);
+            ShowStatusMessage("サービスを登録しました", true);
+            await RefreshServices();
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"登録に失敗しました: {ex.Message}", false);
         }
     }
 
