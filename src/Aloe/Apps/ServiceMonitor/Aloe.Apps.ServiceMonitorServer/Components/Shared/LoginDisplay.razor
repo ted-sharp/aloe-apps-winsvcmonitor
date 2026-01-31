@@ -1,104 +1,48 @@
 @using Microsoft.AspNetCore.Components.Authorization
 
-<div class="login-display">
+<section>
     <CascadingAuthenticationState>
         <AuthorizeView>
             <Authorized>
-                <div class="auth-section">
-                    <div class="status-info">
-                        <div class="status-indicator-line">
-                            <span class="status-indicator authenticated"></span>
-                            <span class="status-text">認証済み</span>
-                        </div>
-                        <div class="status-indicator-line">
-                            <span class="status-indicator session"></span>
-                            <span class="status-text">セッション有効</span>
-                        </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                    <div>
+                        <p style="margin: 0.25rem 0; font-size: 0.85rem;">
+                            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #26b050; margin-right: 0.5rem;"></span>
+                            <span style="color: var(--muted-color);">認証済み</span>
+                        </p>
+                        <p style="margin: 0.25rem 0; font-size: 0.85rem;">
+                            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #17a2b8; margin-right: 0.5rem;"></span>
+                            <span style="color: var(--muted-color);">セッション有効</span>
+                        </p>
                     </div>
-                    <form method="post" action="/logout" style="display: inline;">
-                        <button type="submit" class="logout-btn" title="ログアウト">✕</button>
-                    </form>
                 </div>
             </Authorized>
-            <NotAuthorized>
-                <div class="auth-section">
-                    <a href="/login" role="button" class="btn-sm">ログイン</a>
-                </div>
-            </NotAuthorized>
         </AuthorizeView>
     </CascadingAuthenticationState>
-</div>
+    <form method="post" action="/logout" style="margin: 0;">
+        <button type="submit" title="ログアウト" style="background: none; border: none; color: var(--muted-color); cursor: pointer; font-size: 1.2rem; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; transition: color 0.2s;">✕</button>
+    </form>
+</section>
 
 <style>
-    .login-display {
+    section {
         padding: 0.75rem 0;
         border-bottom: 1px solid var(--form-element-border-color);
+        margin-bottom: 1rem;
     }
 
-    .auth-section {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
+    section a[role="button"] {
+        display: block;
+        text-align: center;
     }
 
-    .status-info {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 0.3rem;
-    }
-
-    .status-indicator-line {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.85rem;
-    }
-
-    .status-indicator {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
-    }
-
-    .status-indicator.authenticated {
-        background-color: #26b050;
-    }
-
-    .status-indicator.session {
-        background-color: #17a2b8;
-    }
-
-    .status-text {
-        color: var(--muted-color);
-    }
-
-    .logout-btn {
-        background: none;
-        border: none;
-        color: var(--muted-color);
-        cursor: pointer;
-        font-size: 1.2rem;
-        padding: 0;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: color 0.2s;
-        flex-shrink: 0;
-    }
-
-    .logout-btn:hover {
+    section button:hover {
         color: #e50000;
     }
 
-    .logout-btn:focus {
-        outline: none;
-        opacity: 0.8;
+    section button:focus {
+        outline: 2px solid var(--form-element-valid-border-color);
+        outline-offset: 2px;
     }
 </style>
 

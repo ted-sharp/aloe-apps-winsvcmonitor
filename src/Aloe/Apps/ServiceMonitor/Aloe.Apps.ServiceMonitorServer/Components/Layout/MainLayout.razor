@@ -1,22 +1,6 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <aside class="sidebar">
-        <LoginDisplay />
-        <nav style="display: flex; flex-direction: column;">
-            <a href="/" class="nav-item">
-                <span class="oi oi-home" aria-hidden="true"></span> ホーム
-            </a>
-            <a href="/services" class="nav-item">
-                <span class="oi oi-list" aria-hidden="true"></span> サービス監視
-            </a>
-        </nav>
-    </aside>
-
-    <main>
-        @Body
-    </main>
-</div>
+@Body
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.

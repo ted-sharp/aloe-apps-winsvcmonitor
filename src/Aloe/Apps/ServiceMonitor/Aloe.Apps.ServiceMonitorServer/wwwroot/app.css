@@ -62,16 +62,6 @@ a[role="button"].warning:hover {
     background-color: #e0a800;
 }
 
-button.btn-sm {
-    font-size: 0.875rem;
-    padding: 0.375rem 0.75rem;
-}
-
-button.btn-xs {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-}
-
 /* Disabled button states */
 button:disabled {
     opacity: 0.5;
@@ -97,75 +87,9 @@ button.warning:disabled {
 }
 
 
-/* 5. Alert Component */
-aside[role="alert"].alert {
-    padding: 0.75rem 1rem;
-    border-radius: 0.375rem;
-    margin-bottom: 1rem;
-}
-
-aside[role="alert"].alert-success {
-    background-color: #d4edda;
-    border: 1px solid #c3e6cb;
-    color: #155724;
-}
-
-aside[role="alert"].alert-danger {
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-    color: #721c24;
-}
-
-aside[role="alert"].alert-warning {
-    background-color: #fff3cd;
-    border: 1px solid #ffeeba;
-    color: #856404;
-}
-
-aside[role="alert"].alert-info {
-    background-color: #d1ecf1;
-    border: 1px solid #bee5eb;
-    color: #0c5460;
-}
-
-aside[role="alert"].alert-sm {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-}
-
-/* 6. Spinner / Loading */
-.spinner {
-    display: inline-block;
-    width: 1rem;
-    height: 1rem;
-    border: 2px solid rgba(0, 0, 0, 0.1);
-    border-radius: 50%;
-    border-top-color: currentColor;
-    animation: spinner-rotation 0.6s linear infinite;
-}
-
-@keyframes spinner-rotation {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-
 /* Card header layout (title left, status right) */
 article > header {
     display: flex;
     justify-content: space-between;
     align-items: start;
-}
-
-/* Popover Styling */
-[popover]::backdrop {
-    backdrop-filter: blur(4px);
-    background-color: rgba(0, 0, 0, 0.3);
-}
-
-[popover] {
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
