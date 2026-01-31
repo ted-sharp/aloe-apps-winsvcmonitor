@@ -8,6 +8,7 @@ public class ServiceInfo
     public ServiceStatus Status { get; set; } = ServiceStatus.Unknown;
     public string StartupType { get; set; } = "Unknown";
     public int ProcessId { get; set; } = 0;
+    public string BinaryPath { get; set; } = string.Empty;
     public bool IsCritical { get; set; } = false;
 
     /// <summary>

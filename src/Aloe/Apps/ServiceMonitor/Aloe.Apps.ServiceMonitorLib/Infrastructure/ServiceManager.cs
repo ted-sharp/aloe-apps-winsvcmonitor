@@ -233,6 +233,7 @@ public class ServiceManager : IServiceManager
                     Status = status,
                     StartupType = sc.StartType.ToString(),
                     ProcessId = processId,
+                    BinaryPath = config?.BinaryPath ?? string.Empty,
                     IsCritical = config?.Critical ?? false
                 };
 

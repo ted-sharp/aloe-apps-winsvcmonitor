@@ -293,7 +293,14 @@ aside[role="alert"].alert-sm {
     grid-column: 1 / -1;
 }
 
-/* 15. Popover Styling */
+/* Card header layout (title left, status right) */
+article > header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+}
+
+/* Popover Styling */
 [popover]::backdrop {
     backdrop-filter: blur(4px);
     background-color: rgba(0, 0, 0, 0.3);
