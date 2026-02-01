@@ -12,10 +12,13 @@
     <link rel="stylesheet" href="lib/open-props/open-props.min.css" />
     <!-- 3. カスタムCSS -->
     <link rel="stylesheet" href="@Assets["app.css"]" />
+    <!-- 3.5. テーブル専用CSS -->
+    <link rel="stylesheet" href="@Assets["table-plus.css"]" />
     <!-- 4. スコープ付きCSS -->
     <link rel="stylesheet" href="@Assets["ServiceMonitorServer.styles.css"]" />
     <!-- 5. アニメーション -->
     <link rel="stylesheet" href="lib/animate-css/animate.min.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
     <ImportMap />
     <HeadOutlet />
 </head>
@@ -24,6 +27,10 @@
     <Routes />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
+        Blazor.addEventListener('enhancedload', () => lucide.createIcons());
+    </script>
 </body>
 
 </html>

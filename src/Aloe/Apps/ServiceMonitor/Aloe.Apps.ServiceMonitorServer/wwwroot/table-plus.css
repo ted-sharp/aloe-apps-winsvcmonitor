@@ -1,0 +1,166 @@
+/* ===== Table-Plus: Row and Cell Styling ===== */
+/*
+ * Table row and cell styles for two-row service entries.
+ * Each service is wrapped in its own <tbody class="service-group">.
+ * This enables pair-based striping, hover, and selection via CSS on the tbody.
+ *
+ * Structure:
+ *   .table-overflow
+ *     └── table
+ *       ├── thead > tr
+ *       │   ├── th (main info)
+ *       │   ├── th.col-status (status)
+ *       │   └── th (actions)
+ *       └── tbody.service-group  (one per service, repeat)
+ *           ├── tr.row-main (rowspan=2 for status/actions)
+ *           │   ├── td (display name)
+ *           │   ├── td.col-status (status, rowspan=2)
+ *           │   └── td (buttons, rowspan=2)
+ *           └── tr.row-detail
+ *             └── td (metadata: startup, uptime, memory, pid, etc.)
+ */
+
+/* ===== Column: Status ===== */
+.col-status {
+    vertical-align: middle;
+    text-align: center;
+    width: 80px;
+    min-width: 80px;
+    white-space: nowrap;
+}
+
+/* ===== Service Group Base ===== */
+.table-overflow table tbody.service-group {
+    cursor: pointer;
+}
+
+.table-overflow table tbody.service-group tr {
+    transition: background-color 0.2s ease;
+}
+
+/* ===== Reset Pico.css Default Row Striping ===== */
+/*
+ * Pico.css stripes every odd <tr>, which breaks pair-based striping.
+ * Reset all rows to transparent, then apply our own pattern.
+ */
+.table-overflow table tbody.service-group tr,
+.table-overflow table tbody.service-group tr:nth-child(odd),
+.table-overflow table tbody.service-group tr:nth-child(even) {
+    background-color: transparent;
+}
+
+/* ===== Pair-based Striping ===== */
+/*
+ * nth-of-type on <tbody> counts only tbody elements (skips thead).
+ * odd = C# index 0, 2, 4... (first, third, fifth service)
+ */
+.table-overflow table tbody.service-group:nth-of-type(odd) tr {
+    background-color: var(--pico-table-row-stripped-background-color, rgba(0, 0, 0, 0.025));
+}
+
+/* ===== Hover State ===== */
+/*
+ * Hover on <tbody> highlights both rows in the pair simultaneously.
+ * No sibling combinator needed — parent hover covers all children.
+ */
+.table-overflow table tbody.service-group:hover tr {
+    background-color: rgba(0, 0, 0, 0.06);
+}
+
+/* ===== Selection State ===== */
+/*
+ * .selected on <tbody> highlights both rows.
+ * Higher specificity than striping and hover due to additional class.
+ */
+.table-overflow table tbody.service-group.selected tr {
+    background-color: rgba(59, 130, 246, 0.15);
+}
+
+.table-overflow table tbody.service-group.selected:hover tr {
+    background-color: rgba(59, 130, 246, 0.2);
+}
+
+/* ===== Detail Content Layout ===== */
+/*
+ * .row-details-content wraps metadata in detail rows.
+ * Uses flexbox with wrapping for responsive icon + text pairs.
+ */
+
+.row-details-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: var(--pico-muted-color);
+}
+
+.row-details-content span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.row-details-content i {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+
+/* ===== Focus States for Accessibility ===== */
+.row-main:focus {
+    outline: 2px solid var(--pico-focus-color);
+    outline-offset: -2px;
+}
+
+/* ===== Reduced Motion Support ===== */
+@media (prefers-reduced-motion: reduce) {
+    .table-overflow table tbody.service-group tr {
+        transition: none;
+    }
+}
+
+/* ===== Responsive Design ===== */
+
+@media (max-width: 1024px) {
+    .col-status {
+        width: 70px;
+        min-width: 70px;
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .col-status {
+        width: 60px;
+        min-width: 60px;
+        padding: 0.5rem 0.25rem;
+    }
+
+    .row-details-content {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .col-status {
+        width: 50px;
+        min-width: 50px;
+        padding: 0.25rem;
+    }
+
+    .row-details-content {
+        gap: 0.25rem;
+    }
+}
+
+/* ===== Print Styles ===== */
+@media print {
+    .table-overflow table tbody.service-group.selected tr {
+        border-left: 2px solid var(--pico-link-color);
+    }
+
+    .table-overflow table tbody.service-group {
+        page-break-inside: avoid;
+    }
+}

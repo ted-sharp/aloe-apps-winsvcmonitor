@@ -52,19 +52,11 @@
             <article>
                 <header>
                     <hgroup>
-                        <h3>@service.DisplayName <small>(@service.ServiceName)</small></h3>
+                        <h3>@service.DisplayName <small class="xs">(@service.Description)</small></h3>
+                        <p>@service.ServiceName <small class="xs">(@service.BinaryPath)</small></p>
                     </hgroup>
                     <mark>@GetStatusText(service)</mark>
                 </header>
-
-                @if (!string.IsNullOrEmpty(service.Description))
-                {
-                    <p><small>@service.Description</small></p>
-                }
-                @if (!string.IsNullOrEmpty(service.BinaryPath))
-                {
-                    <p><small>@service.BinaryPath</small></p>
-                }
 
                 <div class="grid">
                     <div>
