@@ -18,6 +18,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Add API controllers
+builder.Services.AddControllers();
+
 // Authentication設定
 builder.Services.Configure<AuthOptions>(
     builder.Configuration.GetSection(AuthOptions.SectionName));
@@ -30,8 +33,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.Name = "ServiceMonitor.Auth";
     });
 builder.Services.AddAuthorizationBuilder();
 builder.Services.AddHttpContextAccessor();
@@ -77,6 +81,9 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+// Map API controllers
+app.MapControllers();
+
 // Login endpoint
 app.MapPost("/api/login", async (HttpContext context, LoginService loginService, IFormCollection form) =>
 {
@@ -88,7 +95,15 @@ app.MapPost("/api/login", async (HttpContext context, LoginService loginService,
     if (success)
     {
         var principal = loginService.CreateClaimsPrincipal();
-        await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
+        // クッキーを永続化するためにIsPersistent = trueを設定
+        var authProperties = new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(60)
+        };
+
+        await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
 
         var redirectUrl = !string.IsNullOrEmpty(returnUrl) && Uri.IsWellFormedUriString(returnUrl, UriKind.Relative)
             ? returnUrl

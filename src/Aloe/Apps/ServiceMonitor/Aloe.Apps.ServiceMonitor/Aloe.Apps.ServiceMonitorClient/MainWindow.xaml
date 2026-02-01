@@ -4,9 +4,28 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Aloe.Apps.ServiceMonitorClient"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="サービス監視" Height="768" Width="1024"
+        WindowState="Maximized"
+        Closing="Window_Closing"
+        StateChanged="Window_StateChanged"
+        Loaded="Window_Loaded">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
+        <Menu Grid.Row="0">
+            <MenuItem Header="ファイル(_F)">
+                <MenuItem Header="終了(_X)" Click="MenuExit_Click"/>
+            </MenuItem>
+            <MenuItem Header="ツール(_T)">
+                <MenuItem Header="ローカルのサービス管理を開く(_S)" Click="MenuOpenServices_Click"/>
+            </MenuItem>
+        </Menu>
+
+        <wv2:WebView2 x:Name="webView" Grid.Row="1"/>
     </Grid>
 </Window>
