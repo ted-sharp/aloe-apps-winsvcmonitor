@@ -9,12 +9,6 @@
       "files": ["css/pico.min.css"]
     },
     {
-      "library": "open-props@1.7.17",
-      "destination": "wwwroot/lib/open-props/",
-      "provider": "unpkg",
-      "files": ["open-props.min.css"]
-    },
-    {
       "provider": "jsdelivr",
       "library": "animate.css@4.1.1",
       "destination": "wwwroot/lib/animate-css/",
