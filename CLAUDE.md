@@ -13,17 +13,21 @@ dotnet run --project "src/Aloe/Apps/ServiceMonitor/Aloe.Apps.ServiceMonitorServe
 
 # Build the WPF client
 dotnet build "src/Aloe/Apps/ServiceMonitor/Aloe.Apps.ServiceMonitor/Aloe.Apps.ServiceMonitorClient/Aloe.Apps.ServiceMonitorClient.csproj"
+
+# Build the dummy test service
+dotnet build "src/Aloe/Apps/ServiceMonitor/Aloe.Apps.DummyService/Aloe.Apps.DummyService.csproj"
 ```
 
 No solution file exists. Build individual projects directly. No test projects exist.
 
 ## Architecture
 
-Three-project structure targeting .NET 10.0:
+Four-project structure targeting .NET 10.0:
 
-- **ServiceMonitorServer** - Blazor Server web app (interactive server rendering). Hosts Razor pages, SignalR hub, cookie authentication, and background monitoring service.
+- **ServiceMonitorServer** - Blazor Server web app (interactive server rendering). Hosts Razor pages, SignalR hub, Web API endpoints, cookie authentication, and background monitoring service.
 - **ServiceMonitorLib** - Core library. Windows service management via `System.ServiceProcess.ServiceController` and Win32 P/Invoke (`advapi32.dll`). JSON file persistence for monitored service config.
-- **ServiceMonitorClient** - WPF desktop client (.NET 10.0-windows).
+- **ServiceMonitorClient** - WPF desktop client (.NET 10.0-windows). System tray resident application with periodic HTTP polling to Web API for service status monitoring.
+- **DummyService** - Worker Service project for testing. Dummy Windows service used as a monitored service target.
 
 ### Key Interfaces
 
@@ -46,6 +50,13 @@ Three-project structure targeting .NET 10.0:
 ### Authentication
 
 Cookie-based authentication. Login endpoint: `POST /api/login`. Password configured in `appsettings.json` under `Authentication`. Session: 60-minute sliding expiration, HttpOnly, SameSite=Strict.
+
+### Web API
+
+`ServicesController` provides HTTP endpoints for external clients (e.g., WPF client). Requires authentication.
+
+- `GET /api/services` - Returns all monitored services with status
+- `GET /api/services/{serviceName}` - Returns specific service details
 
 ### Real-time Updates
 
