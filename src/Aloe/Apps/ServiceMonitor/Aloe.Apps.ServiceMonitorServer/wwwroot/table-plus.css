@@ -4,6 +4,12 @@
  * Each service is wrapped in its own <tbody class="service-group">.
  * This enables pair-based striping, hover, and selection via CSS on the tbody.
  *
+ * IMPORTANT: Pico.css sets background-color directly on td/th elements:
+ *   td,th { background-color: var(--pico-background-color) }
+ * Cells paint ON TOP of rows in CSS table rendering order
+ * (table → row-group → row → cell). Therefore all background styling
+ * MUST target td, not tr, to be visible.
+ *
  * Structure:
  *   .table-overflow
  *     └── table
@@ -34,18 +40,17 @@
     cursor: pointer;
 }
 
-.table-overflow table tbody.service-group tr {
+.table-overflow table tbody.service-group td {
     transition: background-color 0.2s ease;
 }
 
-/* ===== Reset Pico.css Default Row Striping ===== */
+/* ===== Reset Pico.css Cell Background ===== */
 /*
- * Pico.css stripes every odd <tr>, which breaks pair-based striping.
- * Reset all rows to transparent, then apply our own pattern.
+ * Pico.css sets td { background-color: var(--pico-background-color) }.
+ * Reset to transparent so tbody/tr-level patterns can show through,
+ * then re-apply backgrounds on td for striping/hover/selection.
  */
-.table-overflow table tbody.service-group tr,
-.table-overflow table tbody.service-group tr:nth-child(odd),
-.table-overflow table tbody.service-group tr:nth-child(even) {
+.table-overflow table tbody.service-group td {
     background-color: transparent;
 }
 
@@ -54,29 +59,29 @@
  * nth-of-type on <tbody> counts only tbody elements (skips thead).
  * odd = C# index 0, 2, 4... (first, third, fifth service)
  */
-.table-overflow table tbody.service-group:nth-of-type(odd) tr {
+.table-overflow table tbody.service-group:nth-of-type(odd) td {
     background-color: var(--pico-table-row-stripped-background-color, rgba(0, 0, 0, 0.025));
 }
 
 /* ===== Hover State ===== */
 /*
- * Hover on <tbody> highlights both rows in the pair simultaneously.
+ * Hover on <tbody> highlights all cells in the pair simultaneously.
  * No sibling combinator needed — parent hover covers all children.
  */
-.table-overflow table tbody.service-group:hover tr {
+.table-overflow table tbody.service-group:hover td {
     background-color: rgba(0, 0, 0, 0.06);
 }
 
 /* ===== Selection State ===== */
 /*
- * .selected on <tbody> highlights both rows.
+ * .selected on <tbody> highlights all cells.
  * Higher specificity than striping and hover due to additional class.
  */
-.table-overflow table tbody.service-group.selected tr {
+.table-overflow table tbody.service-group.selected td {
     background-color: rgba(59, 130, 246, 0.15);
 }
 
-.table-overflow table tbody.service-group.selected:hover tr {
+.table-overflow table tbody.service-group.selected:hover td {
     background-color: rgba(59, 130, 246, 0.2);
 }
 
@@ -114,7 +119,7 @@
 
 /* ===== Reduced Motion Support ===== */
 @media (prefers-reduced-motion: reduce) {
-    .table-overflow table tbody.service-group tr {
+    .table-overflow table tbody.service-group td {
         transition: none;
     }
 }
@@ -156,7 +161,7 @@
 
 /* ===== Print Styles ===== */
 @media print {
-    .table-overflow table tbody.service-group.selected tr {
+    .table-overflow table tbody.service-group.selected td {
         border-left: 2px solid var(--pico-link-color);
     }
 

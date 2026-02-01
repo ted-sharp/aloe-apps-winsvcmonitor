@@ -38,14 +38,6 @@
         </button>
     </div>
 
-    @if (!string.IsNullOrEmpty(statusMessage))
-    {
-        <article role="alert" class="@(statusMessageIsSuccess ? "" : "")">
-            <p>@statusMessage</p>
-            <button @onclick="ClearStatusMessage">閉じる</button>
-        </article>
-    }
-
     @if (services == null)
     {
         <article aria-busy="true">ロード中...</article>
@@ -173,10 +165,7 @@
         {
             <article class="service-details-panel">
                 <header>
-                    <div>
-                        <h3>詳細情報</h3>
-                        <p style="margin: 0; color: var(--pico-muted-color);">@selectedService.DisplayName</p>
-                    </div>
+                    <h3 style="margin: 0; color: var(--pico-muted-color);">@selectedService.DisplayName の詳細情報</h3>
                     <button class="icon-button" @onclick="ClearSelection" title="閉じる">
                         <i data-lucide="x"></i>
                     </button>
@@ -184,15 +173,29 @@
 
                 <div class="details-grid">
                     <div class="detail-item">
-                        <label><strong>説明</strong></label>
-                        <p>@(string.IsNullOrEmpty(selectedService.Description) ? "（未設定）" : selectedService.Description)</p>
+                        <p class="path-text"><i data-lucide="file"></i> @(string.IsNullOrEmpty(selectedService.BinaryPath) ? "（未設定）" : selectedService.BinaryPath)</p>
                     </div>
 
                     <div class="detail-item">
-                        <label><strong>バイナリパス</strong></label>
-                        <p class="path-text">@(string.IsNullOrEmpty(selectedService.BinaryPath) ? "（未設定）" : selectedService.BinaryPath)</p>
+                        <p><i data-lucide="info"></i> @(string.IsNullOrEmpty(selectedService.Description) ? "（未設定）" : selectedService.Description)</p>
                     </div>
                 </div>
+            </article>
+        }
+
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <article role="alert" class="@(statusMessageIsSuccess ? "" : "")">
+                <header>
+                    <h3 style="margin: 0;">@statusMessageTitle</h3>
+                    <button class="icon-button" @onclick="ClearStatusMessage" title="閉じる">
+                        <i data-lucide="x"></i>
+                    </button>
+                </header>
+                @if (!string.IsNullOrEmpty(statusMessageDetail))
+                {
+                    <p style="margin: 0; color: var(--pico-muted-color);">@statusMessageDetail</p>
+                }
             </article>
         }
     }
@@ -202,6 +205,8 @@
     private List<ServiceInfo>? services;
     private bool isLoadingServices = false;
     private string statusMessage = string.Empty;
+    private string statusMessageTitle = string.Empty;
+    private string statusMessageDetail = string.Empty;
     private bool statusMessageIsSuccess = false;
     private PeriodicTimer? pollingTimer;
     private string? selectedServiceName;
@@ -316,12 +321,27 @@
         statusMessage = message;
         statusMessageIsSuccess = isSuccess;
 
+        // メッセージを「タイトル: 詳細」形式で分割
+        var colonIndex = message.IndexOf(": ");
+        if (colonIndex > 0)
+        {
+            statusMessageTitle = message[..colonIndex];
+            statusMessageDetail = message[(colonIndex + 2)..];
+        }
+        else
+        {
+            statusMessageTitle = message;
+            statusMessageDetail = string.Empty;
+        }
+
         // 成功メッセージのみ自動消去、エラーメッセージは手動で閉じる必要
         if (isSuccess)
         {
             _ = Task.Delay(4000).ContinueWith(_ =>
             {
                 statusMessage = string.Empty;
+                statusMessageTitle = string.Empty;
+                statusMessageDetail = string.Empty;
                 InvokeAsync(StateHasChanged);
             });
         }
@@ -330,6 +350,8 @@
     private void ClearStatusMessage()
     {
         statusMessage = string.Empty;
+        statusMessageTitle = string.Empty;
+        statusMessageDetail = string.Empty;
     }
 
     private void SelectService(string serviceName)

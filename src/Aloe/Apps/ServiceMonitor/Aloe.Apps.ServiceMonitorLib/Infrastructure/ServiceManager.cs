@@ -353,8 +353,8 @@ public class ServiceManager : IServiceManager
                         process.WaitForExit(5000);
 
                         var result = (!string.IsNullOrEmpty(error) ? error : output).Trim();
-                        if (result.Length > 300)
-                            result = result.Substring(0, 300) + "...";
+                        if (result.Length > 1000)
+                            result = result.Substring(0, 1000) + "...";
 
                         _logger.LogInformation("Final result: '{Result}'", result);
                         return result;

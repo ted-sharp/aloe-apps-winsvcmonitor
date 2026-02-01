@@ -199,7 +199,7 @@ button.icon-only i {
 
 .details-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: var(--pico-spacing);
     margin-top: var(--pico-spacing);
 }
@@ -213,6 +213,15 @@ button.icon-only i {
 .detail-item label {
     color: var(--pico-muted-color);
     font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.detail-item label i {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
 }
 
 .detail-item p {
