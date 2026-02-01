@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>WindowsServiceMonitorServer</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Aloe.Apps.WindowsServiceMonitorLib/Aloe.Apps.WindowsServiceMonitorLib.csproj" />
+    <ProjectReference Include="..\Aloe.Apps.DummyService\Aloe.Apps.DummyService.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.services.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

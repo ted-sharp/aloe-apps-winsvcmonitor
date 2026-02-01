@@ -1,37 +1,37 @@
-# Aloe Apps ServiceMonitor
+# Aloe Apps WindowsServiceMonitor
 
 Windows サービスの監視と管理を行うための .NET 10.0 アプリケーション群
 
 ## 概要
 
-ServiceMonitor は、Windows サービスのリアルタイム監視、操作、管理を Web UI とデスクトップクライアントの両方から行えるシステムです。
+WindowsServiceMonitor は、Windows サービスのリアルタイム監視、操作、管理を Web UI とデスクトップクライアントの両方から行えるシステムです。
 
 ### 構成プロジェクト
 
 | プロジェクト | 種類 | 説明 |
 |---|---|---|
-| **ServiceMonitorServer** | Blazor Server | Web UI によるサービス監視・操作 |
-| **ServiceMonitorClient** | WPF | タスクトレイ常駐型デスクトップクライアント |
-| **ServiceMonitorLib** | Class Library | サービス管理コアロジック |
+| **WindowsServiceMonitorServer** | Blazor Server | Web UI によるサービス監視・操作 |
+| **WindowsServiceMonitorClient** | WPF | タスクトレイ常駐型デスクトップクライアント |
+| **WindowsServiceMonitorLib** | Class Library | サービス管理コアロジック |
 | **DummyService** | Windows Service | テスト用ダミーサービス |
 
 ## 主な機能
 
-### ServiceMonitorServer (Web)
+### WindowsServiceMonitorServer (Web)
 - ブラウザからのサービス監視（プロセスID、メモリ使用量、稼働時間）
 - サービス操作（開始、停止、再起動）
 - OS レベルのサービス登録・解除（sc create / sc delete）
 - Cookie 認証によるアクセス制御
 - SignalR リアルタイム更新
 
-### ServiceMonitorClient (デスクトップ)
+### WindowsServiceMonitorClient (デスクトップ)
 - タスクトレイ常駐
 - 必須サービス停止時の視覚的通知（アイコン赤色表示）
 - WebView2 による Server UI の埋め込み表示
 - Cookie 認証の永続化
 - Windows サービス管理ツール (services.msc) のクイック起動
 
-### ServiceMonitorLib (コアライブラリ)
+### WindowsServiceMonitorLib (コアライブラリ)
 - `System.ServiceProcess.ServiceController` による状態取得
 - Win32 API (advapi32.dll) によるプロセス詳細情報取得
 - JSON ファイルによる監視対象サービス設定管理
@@ -48,10 +48,10 @@ ServiceMonitor は、Windows サービスのリアルタイム監視、操作、
 
 ```bash
 # ビルド
-dotnet build "src/Aloe/Apps/ServiceMonitor/Aloe.Apps.ServiceMonitorServer/Aloe.Apps.ServiceMonitorServer.csproj"
+dotnet build "src/Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitorServer/Aloe.Apps.WindowsServiceMonitorServer.csproj"
 
 # 実行
-dotnet run --project "src/Aloe/Apps/ServiceMonitor/Aloe.Apps.ServiceMonitorServer/Aloe.Apps.ServiceMonitorServer.csproj"
+dotnet run --project "src/Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitorServer/Aloe.Apps.WindowsServiceMonitorServer.csproj"
 ```
 
 起動後:
@@ -62,10 +62,10 @@ dotnet run --project "src/Aloe/Apps/ServiceMonitor/Aloe.Apps.ServiceMonitorServe
 
 ```bash
 # ビルド
-dotnet build "src/Aloe/Apps/ServiceMonitor/Aloe.Apps.ServiceMonitor/Aloe.Apps.ServiceMonitorClient/Aloe.Apps.ServiceMonitorClient.csproj"
+dotnet build "src/Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitorClient/Aloe.Apps.WindowsServiceMonitorClient.csproj"
 
 # 実行
-dotnet run --project "src/Aloe/Apps/ServiceMonitor/Aloe.Apps.ServiceMonitor/Aloe.Apps.ServiceMonitorClient/Aloe.Apps.ServiceMonitorClient.csproj"
+dotnet run --project "src/Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitorClient/Aloe.Apps.WindowsServiceMonitorClient.csproj"
 ```
 
 クライアント設定（`appsettings.json`）で接続先サーバー URL を指定します。
@@ -74,7 +74,7 @@ dotnet run --project "src/Aloe/Apps/ServiceMonitor/Aloe.Apps.ServiceMonitor/Aloe
 
 ```bash
 # ビルド（Native AOT）
-dotnet publish "src/Aloe/Apps/ServiceMonitor/Aloe.Apps.DummyService/Aloe.Apps.DummyService.csproj" -c Release
+dotnet publish "src/Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.DummyService/Aloe.Apps.DummyService.csproj" -c Release
 
 # サービス登録（管理者権限必要）
 sc create DummyService binPath="C:\path\to\DummyService.exe"
@@ -101,21 +101,21 @@ sc start DummyService
 
 ### リアルタイム更新
 
-- **Server**: `BackgroundServiceMonitor` が定期ポーリング → `ServiceMonitorHub` (SignalR) で配信
+- **Server**: `BackgroundWindowsServiceMonitor` が定期ポーリング → `WindowsServiceMonitorHub` (SignalR) で配信
 - **Client**: SignalR 受信 + HTTP ポーリング（フォールバック）
 
 ## 設定ファイル
 
 ### appsettings.json (Server)
 - 認証パスワード (`Authentication:Password`)
-- 監視対象サービス一覧（`ServiceMonitor:MonitoredServices`）
+- 監視対象サービス一覧（`WindowsServiceMonitor:MonitoredServices`）
 
 ### appsettings.services.json (Server)
 - 監視対象サービスの詳細設定
 - サービス登録時のデフォルト設定（`serviceDefaults`）
 
 ### appsettings.json (Client)
-- 接続先サーバー URL (`ServiceMonitor:ServerUrl`)
+- 接続先サーバー URL (`WindowsServiceMonitor:ServerUrl`)
 - ポーリング間隔設定
 
 ## 技術スタック
@@ -133,8 +133,8 @@ sc start DummyService
 
 各プロジェクトの詳細については、以下のドキュメントを参照してください。
 
-- [ServiceMonitorServer](src/Aloe/Apps/ServiceMonitor/Aloe.Apps.ServiceMonitorServer/README_ServiceMonitorServer.md)
-- [ServiceMonitorClient](src/Aloe/Apps/ServiceMonitor/Aloe.Apps.ServiceMonitor/Aloe.Apps.ServiceMonitorClient/README_ServiceMonitorClient.md)
+- [WindowsServiceMonitorServer](src/Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitorServer/README_WindowsServiceMonitorServer.md)
+- [WindowsServiceMonitorClient](src/Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitorClient/README_WindowsServiceMonitorClient.md)
 
 ## ライセンス
 

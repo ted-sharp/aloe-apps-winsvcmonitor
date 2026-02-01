@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Apps/" />
+  <Folder Name="/Apps/AuditViewer/" />
+  <Folder Name="/Apps/BannerAleart/" />
+  <Folder Name="/Apps/BarcodeReaderBridge/" />
+  <Folder Name="/Apps/ClipboardBridge/" />
+  <Folder Name="/Apps/FileBridge/" />
+  <Folder Name="/Apps/WindowsServiceMonitor/">
+    <Project Path="Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.DummyService/Aloe.Apps.DummyService.csproj" Id="7207f5f2-b792-4fd3-963f-9fe164f35908" />
+    <Project Path="Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitorClient/Aloe.Apps.WindowsServiceMonitorClient.csproj" Id="294e17c1-052b-491e-bfbf-5b0b46962e85" />
+    <Project Path="Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitorLib/Aloe.Apps.WindowsServiceMonitorLib.csproj" Id="df3ad55d-e6ce-450c-b929-16ea683d3b00" />
+    <Project Path="Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitorServer/Aloe.Apps.WindowsServiceMonitorServer.csproj" Id="c994e43e-b4fe-41bd-b5df-a022fa8bc924" />
+  </Folder>
+  <Folder Name="/Apps/SmbWatchdog/" />
+  <Folder Name="/Apps/TeamsAlert/" />
+</Solution>
