@@ -5,16 +5,16 @@
 <main class="container">
     <hgroup>
         <h1>Windows サービス監視システム</h1>
-        <p>ブラウザからWindowsサービスを監視・操作します</p>
+        <p>ブラウザからサーバー上のWindowsサービスを監視・操作します</p>
     </hgroup>
 
-    <article style="max-width: 600px">
+    <article>
         <header>
             <h3>
                 <span class="oi oi-list" aria-hidden="true"></span> サービス監視
             </h3>
         </header>
-        <p>appsettings.services.json で設定されたWindowsサービスをリアルタイムで監視します。テーブル形式で各サービスのステータス、起動タイプ、プロセスIDを確認・操作できます。</p>
+        <p>appsettings.services.json で設定されたサーバー上のWindowsサービスをリアルタイムで監視します。テーブル形式で各サービスのステータス、起動タイプ、プロセスIDを確認・操作できます。</p>
         <footer>
             <a href="/services" role="button">サービス一覧へ</a>
         </footer>
@@ -25,7 +25,7 @@
             <h2>機能</h2>
         </header>
         <ul>
-            <li>複数のWindowsサービスの一元管理</li>
+            <li>サーバー上の複数のWindowsサービスを一元管理</li>
             <li>リアルタイムステータス更新（SignalR）</li>
             <li>サービスの起動・停止・再起動</li>
             <li>サービス詳細情報表示（説明、プロセスID等）</li>
@@ -38,10 +38,10 @@
             <h2>注意事項</h2>
         </header>
         <ul>
-            <li><strong>管理者権限が必須です</strong>：このアプリケーションはWindows管理者権限で実行する必要があります</li>
-            <li><strong>設定ファイル管理</strong>：appsettings.services.json に記載されたサービスのみ監視対象となります</li>
-            <li><strong>Windows限定</strong>：このアプリケーはWindows環境でのみ動作します</li>
-            <li><strong>セキュリティ</strong>：本番環境での使用時は認証・認可の実装を推奨します</li>
+            <li><strong>管理者権限が必須です</strong>：サーバー側でこのアプリケーションをWindows管理者権限で実行する必要があります</li>
+            <li><strong>設定ファイル管理</strong>：appsettings.services.json に記載されたサーバー上のサービスのみ監視対象となります</li>
+            <li><strong>Windows限定</strong>：サーバー側はWindows環境でのみ動作します（クライアントは任意のブラウザで可）</li>
+            <li><strong>セキュリティ</strong>：認証パスワードを安全に管理し、HTTPS経由でのアクセスを推奨します</li>
         </ul>
     </article>
 </main>
