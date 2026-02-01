@@ -70,7 +70,10 @@
                                 <strong>@service.DisplayName</strong>
                             </td>
                             <td rowspan="2" class="col-status">
-                                <mark>@GetStatusText(service)</mark>
+                                <span class="status-badge @GetStatusBadgeClass(service)">
+                                    <i data-lucide="@GetStatusIcon(service)"></i>
+                                    <span>@GetStatusText(service)</span>
+                                </span>
                             </td>
                             <td rowspan="2">
                                 <div role="group">
@@ -402,6 +405,40 @@
             ServiceStatus.Continuing => "再開中",
             ServiceStatus.Pausing => "一時停止中",
             _ => "不明"
+        };
+    }
+
+    private string GetStatusIcon(ServiceInfo service)
+    {
+        if (service.StartupType == "未登録")
+            return "help-circle";
+        return service.Status switch
+        {
+            ServiceStatus.Running => "check-circle-2",
+            ServiceStatus.Stopped => "circle",
+            ServiceStatus.Paused => "pause-circle-2",
+            ServiceStatus.Starting => "loader",
+            ServiceStatus.Stopping => "loader",
+            ServiceStatus.Continuing => "play-circle-2",
+            ServiceStatus.Pausing => "pause-circle-2",
+            _ => "help-circle"
+        };
+    }
+
+    private string GetStatusBadgeClass(ServiceInfo service)
+    {
+        if (service.StartupType == "未登録")
+            return "status-badge-unknown";
+        return service.Status switch
+        {
+            ServiceStatus.Running => "status-badge-running",
+            ServiceStatus.Stopped => "status-badge-stopped",
+            ServiceStatus.Paused => "status-badge-paused",
+            ServiceStatus.Starting => "status-badge-transition",
+            ServiceStatus.Stopping => "status-badge-transition",
+            ServiceStatus.Continuing => "status-badge-transition",
+            ServiceStatus.Pausing => "status-badge-transition",
+            _ => "status-badge-unknown"
         };
     }
 

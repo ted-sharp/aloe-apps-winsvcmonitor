@@ -187,6 +187,49 @@ button.icon-only i {
     height: 1.2rem;
 }
 
+/* ===== Status Badge Styles ===== */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.status-badge i {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+
+.status-badge-running {
+    background-color: rgba(38, 176, 80, 0.12);
+    color: #1e8a3d;
+}
+
+.status-badge-stopped {
+    background-color: rgba(44, 62, 80, 0.12);
+    color: #1a252f;
+}
+
+.status-badge-paused {
+    background-color: rgba(255, 193, 7, 0.12);
+    color: #b8860b;
+}
+
+.status-badge-transition {
+    background-color: rgba(33, 150, 243, 0.12);
+    color: #1565c0;
+}
+
+.status-badge-unknown {
+    background-color: rgba(158, 158, 158, 0.12);
+    color: #616161;
+}
+
 /* ===== Table Row Styling ===== */
 /* Row styles moved to table-plus.css: .service-group, .row-main, .row-detail, .selected, .row-details-content */
 
