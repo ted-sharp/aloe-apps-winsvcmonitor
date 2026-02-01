@@ -53,12 +53,9 @@ Cookie-based authentication. Login endpoint: `POST /api/login`. Password configu
 
 ## UI
 
-Two versions of the service monitoring page exist:
+Service monitoring page at `/services` (Services.razor) uses a table-based layout with Pico.css semantic HTML (`<article>`, `<table>`, `<tbody>` grouping, `role="group"`, `aria-busy`).
 
-- `/services` - Uses custom CSS classes defined in `app.css` with shared components (`ServiceCard`, `ServiceControlButtons`, `ConfirmationModal`)
-- `/services2` - Pure Pico.css approach using semantic HTML (`<article>`, `<header>`, `<footer>`, `<mark>`, `<details>`, `role="group"`, `aria-busy`)
-
-CSS framework is **Pico.css** (classless/minimal). Custom styles in `wwwroot/app.css` add button color variants (success/danger/warning), badge styles, and layout helpers. Prefer semantic HTML over custom classes.
+CSS framework is **Pico.css** (classless/minimal). Custom styles in `wwwroot/app.css` add button color variants (success/danger/warning), status badge styles, and table layout helpers. Prefer semantic HTML over custom classes.
 
 ## Conventions
 
