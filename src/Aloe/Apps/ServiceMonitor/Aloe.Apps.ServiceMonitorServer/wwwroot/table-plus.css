@@ -44,6 +44,17 @@
     transition: background-color 0.2s ease;
 }
 
+/* ===== Border Styling ===== */
+/* Weak border within service (between main and detail rows) */
+.table-overflow table tbody.service-group .row-main td {
+    border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+}
+
+/* Strong border between services */
+.table-overflow table tbody.service-group .row-detail td {
+    border-bottom: 2px solid rgba(128, 128, 128, 0.3);
+}
+
 /* ===== Reset Pico.css Cell Background ===== */
 /*
  * Pico.css sets td { background-color: var(--pico-background-color) }.

@@ -1,4 +1,4 @@
-@page "/services-table"
+@page "/services"
 @using Aloe.Apps.ServiceMonitorLib.Models
 @using Aloe.Apps.ServiceMonitorLib.Interfaces
 @using Aloe.Apps.ServiceMonitorServer.Components.Shared
@@ -12,7 +12,7 @@
 <PageTitle>サービス監視</PageTitle>
 
 <main class="container">
-    <header class="header-with-controls">
+    <nav>
         <hgroup>
             <h1>Windows サービス監視</h1>
         </hgroup>
@@ -21,7 +21,7 @@
                 <i data-lucide="x"></i>
             </button>
         </form>
-    </header>
+    </nav>
 
     <div role="group">
         <button @onclick="RefreshServices" disabled="@isLoadingServices">
@@ -50,8 +50,9 @@
     }
     else
     {
-        <div class="table-overflow">
-            <table>
+        <article>
+            <div class="table-overflow">
+                <table>
                 <thead>
                     <tr>
                         <th>サービス情報</th>
@@ -160,35 +161,28 @@
                         </tr>
                         </tbody>
                     }
-            </table>
-        </div>
+                </table>
+            </div>
+        </article>
 
         <!-- 詳細エリア -->
         @if (!string.IsNullOrEmpty(selectedServiceName) && services.FirstOrDefault(s => s.ServiceName == selectedServiceName) is ServiceInfo selectedService)
         {
-            <article class="service-details-panel">
+            <article class="animate__animated animate__fadeIn animate__faster" style="border-left: 4px solid var(--pico-primary);">
                 <header>
                     <h3 style="margin: 0; color: var(--pico-muted-color);">@selectedService.DisplayName の詳細情報</h3>
                     <button class="icon-button" @onclick="ClearSelection" title="閉じる">
                         <i data-lucide="x"></i>
                     </button>
                 </header>
-
-                <div class="details-grid">
-                    <div class="detail-item">
-                        <p class="path-text"><i data-lucide="file"></i> @(string.IsNullOrEmpty(selectedService.BinaryPath) ? "（未設定）" : selectedService.BinaryPath)</p>
-                    </div>
-
-                    <div class="detail-item">
-                        <p><i data-lucide="info"></i> @(string.IsNullOrEmpty(selectedService.Description) ? "（未設定）" : selectedService.Description)</p>
-                    </div>
-                </div>
+                <p><i data-lucide="file"></i> <code>@(string.IsNullOrEmpty(selectedService.BinaryPath) ? "（未設定）" : selectedService.BinaryPath)</code></p>
+                <p><i data-lucide="info"></i> @(string.IsNullOrEmpty(selectedService.Description) ? "（未設定）" : selectedService.Description)</p>
             </article>
         }
 
         @if (!string.IsNullOrEmpty(statusMessage))
         {
-            <article role="alert" class="@(statusMessageIsSuccess ? "" : "")">
+            <article role="alert" class="animate__animated animate__fadeIn animate__faster">
                 <header>
                     <h3 style="margin: 0;">@statusMessageTitle</h3>
                     <button class="icon-button" @onclick="ClearStatusMessage" title="閉じる">

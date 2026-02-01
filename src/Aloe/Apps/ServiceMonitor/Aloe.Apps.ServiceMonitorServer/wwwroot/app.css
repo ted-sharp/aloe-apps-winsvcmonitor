@@ -45,7 +45,6 @@ h1:focus {
     content: "An error has occurred."
 }
 
-/* 3.5. Blazor Error UI (Framework integration) */
 #blazor-error-ui {
     color-scheme: light only;
     background: lightyellow;
@@ -60,12 +59,12 @@ h1:focus {
     z-index: 1000;
 }
 
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-    }
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
 
 /* 4. Button Color Variants (IEC 60073 compliant) */
 
@@ -131,7 +130,6 @@ button.delete:disabled {
     color: #fff;
 }
 
-/* Disabled button states */
 button:disabled {
     cursor: not-allowed;
 }
@@ -155,24 +153,6 @@ button.icon-button:hover {
     color: var(--color-danger);
 }
 
-/* 6. Header layout (title left, controls right) */
-.header-with-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-article > header {
-    display: flex;
-    justify-content: space-between;
-    align-items: start;
-}
-
-/* 7. Extra small text */
-.xs {
-    font-size: 0.75rem;
-}
-
 button.icon-only {
     padding: 0.5rem;
     width: 2.5rem;
@@ -187,7 +167,14 @@ button.icon-only i {
     height: 1.2rem;
 }
 
-/* ===== Status Badge Styles ===== */
+/* 6. Article header layout (title + close button) */
+article > header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+}
+
+/* 7. Status Badge Styles */
 .status-badge {
     display: inline-flex;
     align-items: center;
@@ -230,68 +217,8 @@ button.icon-only i {
     color: #616161;
 }
 
-/* ===== Table Row Styling ===== */
-/* Row styles moved to table-plus.css: .service-group, .row-main, .row-detail, .selected, .row-details-content */
-
-/* 10. Service Details Panel */
-.service-details-panel {
-    margin-top: var(--pico-spacing);
-    padding: var(--pico-spacing);
-    border-left: 4px solid var(--pico-link-color);
-}
-
-.details-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--pico-spacing);
-    margin-top: var(--pico-spacing);
-}
-
-.detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.detail-item label {
-    color: var(--pico-muted-color);
-    font-size: 0.875rem;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-
-.detail-item label i {
-    width: 1rem;
-    height: 1rem;
-    flex-shrink: 0;
-}
-
-.detail-item p {
-    margin: 0;
-    word-break: break-word;
-    overflow-wrap: break-word;
-    white-space: pre-wrap;
-}
-
-.path-text {
-    font-family: monospace;
-    font-size: 0.875rem;
-    background-color: var(--pico-code-background-color);
-    padding: 0.5rem;
-    border-radius: var(--pico-border-radius);
-}
-
+/* 8. Responsive */
 @media (max-width: 768px) {
-    .service-details {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .details-grid {
-        grid-template-columns: 1fr;
-    }
-
     button.icon-only {
         width: 2rem;
         height: 2rem;
