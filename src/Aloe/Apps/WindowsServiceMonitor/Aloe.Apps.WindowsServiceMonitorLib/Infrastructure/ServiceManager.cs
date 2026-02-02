@@ -14,19 +14,22 @@ public class ServiceManager : IServiceManager
     private readonly WindowsServiceMonitorOptions _options;
     private readonly IMonitoredServiceRepository _repository;
     private readonly IServiceRegistrar _registrar;
+    private readonly ILogRepository _logRepository;
 
     public ServiceManager(
         IWin32ServiceApi win32Api,
         ILogger<ServiceManager> logger,
         IOptions<WindowsServiceMonitorOptions> options,
         IMonitoredServiceRepository repository,
-        IServiceRegistrar registrar)
+        IServiceRegistrar registrar,
+        ILogRepository logRepository)
     {
         _win32Api = win32Api;
         _logger = logger;
         _options = options.Value;
         _repository = repository;
         _registrar = registrar;
+        _logRepository = logRepository;
     }
 
     public async Task<List<ServiceInfo>> GetAllServicesAsync()
@@ -80,6 +83,9 @@ public class ServiceManager : IServiceManager
             {
                 var service = new ServiceController(serviceName);
 
+                // 操作前のステータスを取得
+                var oldStatus = service.Status;
+
                 if (service.Status == ServiceControllerStatus.Running)
                 {
                     return ServiceOperationResult.SuccessResult($"サービス '{serviceName}' は既に実行中です");
@@ -89,6 +95,17 @@ public class ServiceManager : IServiceManager
                 service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
 
                 _logger.LogInformation("サービス '{ServiceName}' が起動されました", serviceName);
+
+                // ログ記録（成功時）
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{serviceName}' を起動しました ({ConvertStatusToJapanese(oldStatus)}→実行中)",
+                    ServiceName = serviceName,
+                    Result = "成功"
+                });
+
                 return ServiceOperationResult.SuccessResult($"サービス '{serviceName}' を起動しました");
             }
             catch (System.ComponentModel.Win32Exception ex)
@@ -107,6 +124,17 @@ public class ServiceManager : IServiceManager
 
                 var exeOutput = config != null ? await GetExeConsoleOutputAsync(config) : string.Empty;
                 var errorMessage = !string.IsNullOrEmpty(exeOutput) ? exeOutput : ex.Message;
+
+                // ログ記録
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{serviceName}' の起動に失敗しました: {errorMessage}",
+                    ServiceName = serviceName,
+                    Result = "失敗"
+                });
+
                 return ServiceOperationResult.FailureResult($"起動に失敗しました: {errorMessage}");
             }
             catch (InvalidOperationException ex)
@@ -162,6 +190,9 @@ public class ServiceManager : IServiceManager
             {
                 var service = new ServiceController(serviceName);
 
+                // 操作前のステータスを取得
+                var oldStatus = service.Status;
+
                 if (service.Status == ServiceControllerStatus.Stopped)
                 {
                     return ServiceOperationResult.SuccessResult($"サービス '{serviceName}' は既に停止しています");
@@ -171,6 +202,17 @@ public class ServiceManager : IServiceManager
                 service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
 
                 _logger.LogInformation("サービス '{ServiceName}' が停止されました", serviceName);
+
+                // ログ記録（成功時）
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{serviceName}' を停止しました ({ConvertStatusToJapanese(oldStatus)}→停止)",
+                    ServiceName = serviceName,
+                    Result = "成功"
+                });
+
                 return ServiceOperationResult.SuccessResult($"サービス '{serviceName}' を停止しました");
             }
             catch (System.ComponentModel.Win32Exception ex)
@@ -189,6 +231,17 @@ public class ServiceManager : IServiceManager
 
                 var exeOutput = config != null ? await GetExeConsoleOutputAsync(config) : string.Empty;
                 var errorMessage = !string.IsNullOrEmpty(exeOutput) ? exeOutput : ex.Message;
+
+                // ログ記録
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{serviceName}' の停止に失敗しました: {errorMessage}",
+                    ServiceName = serviceName,
+                    Result = "失敗"
+                });
+
                 return ServiceOperationResult.FailureResult($"停止に失敗しました: {errorMessage}");
             }
             catch (InvalidOperationException ex)
@@ -243,6 +296,9 @@ public class ServiceManager : IServiceManager
             {
                 var service = new ServiceController(serviceName);
 
+                // 操作前のステータスを取得
+                var oldStatus = service.Status;
+
                 if (service.Status == ServiceControllerStatus.Running)
                 {
                     service.Stop();
@@ -253,6 +309,17 @@ public class ServiceManager : IServiceManager
                 service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
 
                 _logger.LogInformation("サービス '{ServiceName}' が再起動されました", serviceName);
+
+                // ログ記録（成功時）
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{serviceName}' を再起動しました ({ConvertStatusToJapanese(oldStatus)}→停止→実行中)",
+                    ServiceName = serviceName,
+                    Result = "成功"
+                });
+
                 return ServiceOperationResult.SuccessResult($"サービス '{serviceName}' を再起動しました");
             }
             catch (System.ComponentModel.Win32Exception ex)
@@ -271,6 +338,17 @@ public class ServiceManager : IServiceManager
 
                 var exeOutput = config != null ? await GetExeConsoleOutputAsync(config) : string.Empty;
                 var errorMessage = !string.IsNullOrEmpty(exeOutput) ? exeOutput : ex.Message;
+
+                // ログ記録
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{serviceName}' の再起動に失敗しました: {errorMessage}",
+                    ServiceName = serviceName,
+                    Result = "失敗"
+                });
+
                 return ServiceOperationResult.FailureResult($"再起動に失敗しました: {errorMessage}");
             }
             catch (InvalidOperationException ex)
@@ -481,6 +559,27 @@ public class ServiceManager : IServiceManager
         };
     }
 
+    private string ConvertStatusToJapanese(ServiceStatus status)
+    {
+        return status switch
+        {
+            ServiceStatus.Running => "実行中",
+            ServiceStatus.Stopped => "停止",
+            ServiceStatus.Paused => "一時停止",
+            ServiceStatus.Starting => "起動中",
+            ServiceStatus.Stopping => "停止中",
+            ServiceStatus.Continuing => "再開中",
+            ServiceStatus.Pausing => "一時停止中",
+            ServiceStatus.Unknown => "不明",
+            _ => status.ToString()
+        };
+    }
+
+    private string ConvertStatusToJapanese(ServiceControllerStatus status)
+    {
+        return ConvertStatusToJapanese(ConvertStatus(status));
+    }
+
     private void ValidateServiceName(string serviceName)
     {
         if (string.IsNullOrWhiteSpace(serviceName))
@@ -672,6 +771,15 @@ public class ServiceManager : IServiceManager
                 return ServiceOperationResult.FailureResult("無効なサービス名です");
             }
 
+            // 操作前のステータスを取得（停止前に）
+            ServiceControllerStatus? oldStatus = null;
+            try
+            {
+                var sc = new ServiceController(serviceName);
+                oldStatus = sc.Status;
+            }
+            catch { }
+
             // Stop service if running
             try
             {
@@ -693,10 +801,34 @@ public class ServiceManager : IServiceManager
             var unregisterResult = await _registrar.UnregisterServiceAsync(serviceName);
             if (!unregisterResult.Success)
             {
+                // ログ記録（失敗）
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{serviceName}' の解除に失敗しました: {unregisterResult.Message}",
+                    ServiceName = serviceName,
+                    Result = "失敗"
+                });
+
                 return unregisterResult;
             }
 
             _logger.LogInformation("サービス '{ServiceName}' を Windows から解除しました", serviceName);
+
+            // ログ記録（成功時）
+            string statusChange = oldStatus.HasValue
+                ? $" ({ConvertStatusToJapanese(oldStatus.Value)}→停止→不明)"
+                : "";
+            await _logRepository.AddLogAsync(new LogEntry
+            {
+                Timestamp = DateTime.Now,
+                Type = LogType.Operation,
+                Message = $"サービス '{serviceName}' を解除しました{statusChange}",
+                ServiceName = serviceName,
+                Result = "成功"
+            });
+
             return ServiceOperationResult.SuccessResult($"サービス '{serviceName}' を解除しました");
         }
         catch (Exception ex)

@@ -75,6 +75,18 @@ public class BackgroundWindowsServiceMonitor : BackgroundService
                             "サービス '{ServiceName}' の状態が変更されました: {OldStatus} -> {NewStatus}",
                             service.ServiceName, previousStatus, service.Status);
 
+                        // ログ記録
+                        var logRepository = scope.ServiceProvider.GetRequiredService<ILogRepository>();
+                        await logRepository.AddLogAsync(new LogEntry
+                        {
+                            Timestamp = DateTime.Now,
+                            Type = LogType.StatusChange,
+                            Message = $"サービス '{service.ServiceName}' の状態が変更されました",
+                            ServiceName = service.ServiceName,
+                            OldStatus = previousStatus.ToString(),
+                            NewStatus = service.Status.ToString()
+                        });
+
                         await _hubContext.Clients.Group("ServiceMonitors")
                             .SendAsync("ServiceStatusUpdated", service, cancellationToken: stoppingToken);
                     }

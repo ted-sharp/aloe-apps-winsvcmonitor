@@ -217,7 +217,13 @@ article > header {
     color: #616161;
 }
 
-/* 8. Responsive */
+/* 8. Table overflow handling */
+.table-overflow {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+/* 9. Responsive */
 @media (max-width: 768px) {
     button.icon-only {
         width: 2rem;

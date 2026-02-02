@@ -1,0 +1,246 @@
+@page "/logs"
+@rendermode InteractiveServer
+@using Aloe.Apps.WindowsServiceMonitorLib.Interfaces
+@using Aloe.Apps.WindowsServiceMonitorLib.Models
+@using Microsoft.JSInterop
+@inject ILogRepository LogRepository
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>ログ閲覧 - Windows Service Monitor</PageTitle>
+
+<nav>
+    <hgroup>
+        <h1>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12h18"/>
+                <path d="M3 18h18"/>
+                <path d="M3 6h18"/>
+            </svg>
+            ログ閲覧
+        </h1>
+    </hgroup>
+    <button class="icon-button" @onclick="NavigateToHome" title="閉じる">
+        <i data-lucide="x"></i>
+    </button>
+</nav>
+
+<p>アクセスログ、操作ログ、サービスステータス変化ログを表示します</p>
+
+<article>
+
+    <section>
+        <form @onsubmit="ApplyFilters">
+            <div class="grid">
+                <label>
+                    ログタイプ
+                    <select @bind="selectedLogType">
+                        <option value="">すべて</option>
+                        <option value="Access">アクセスログ</option>
+                        <option value="Operation">操作ログ</option>
+                        <option value="StatusChange">ステータス変化ログ</option>
+                    </select>
+                </label>
+
+                <label>
+                    開始日
+                    <input type="date" @bind="startDate" />
+                </label>
+
+                <label>
+                    終了日
+                    <input type="date" @bind="endDate" />
+                </label>
+            </div>
+
+            <button type="submit">フィルター適用</button>
+        </form>
+    </section>
+
+    @if (loading)
+    {
+        <section aria-busy="true">読み込み中...</section>
+    }
+    else if (logs.Count == 0)
+    {
+        <section>
+            <p>ログがありません</p>
+        </section>
+    }
+    else
+    {
+        <section>
+            <div class="table-overflow">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>タイムスタンプ</th>
+                            <th>タイプ</th>
+                            <th>メッセージ</th>
+                            <th>詳細</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in logs)
+                        {
+                            <tr>
+                                <td>@log.Timestamp.ToString("yyyy/MM/dd HH:mm:ss")</td>
+                                <td>
+                                    @switch (log.Type)
+                                    {
+                                        case LogType.Access:
+                                            <span class="status-badge status-running">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                                                </svg>
+                                                アクセス
+                                            </span>
+                                            break;
+                                        case LogType.Operation:
+                                            <span class="status-badge status-stopped">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/>
+                                                    <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>
+                                                    <path d="M12 2v2"/>
+                                                    <path d="M12 20v2"/>
+                                                    <path d="m4.93 4.93 1.41 1.41"/>
+                                                    <path d="m17.66 17.66 1.41 1.41"/>
+                                                    <path d="M2 12h2"/>
+                                                    <path d="M20 12h2"/>
+                                                    <path d="m6.34 17.66-1.41 1.41"/>
+                                                    <path d="m19.07 4.93-1.41 1.41"/>
+                                                </svg>
+                                                操作
+                                            </span>
+                                            break;
+                                        case LogType.StatusChange:
+                                            <span class="status-badge status-paused">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <line x1="12" x2="12" y1="2" y2="22"/>
+                                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                                                </svg>
+                                                ステータス変化
+                                            </span>
+                                            break;
+                                    }
+                                </td>
+                                <td>@log.Message</td>
+                                <td>
+                                    @if (log.Type == LogType.Access && !string.IsNullOrEmpty(log.UserName))
+                                    {
+                                        <small>ユーザー: @log.UserName</small>
+                                        <br />
+                                    }
+                                    @if (log.Type == LogType.Access && !string.IsNullOrEmpty(log.IpAddress))
+                                    {
+                                        <small>IP: @log.IpAddress</small>
+                                        <br />
+                                    }
+                                    @if (log.Type == LogType.Operation && !string.IsNullOrEmpty(log.Result))
+                                    {
+                                        <small>結果: @log.Result</small>
+                                        <br />
+                                    }
+                                    @if (log.Type == LogType.StatusChange && !string.IsNullOrEmpty(log.OldStatus))
+                                    {
+                                        <small>@log.OldStatus → @log.NewStatus</small>
+                                        <br />
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (totalPages > 1)
+            {
+                <nav aria-label="ページネーション">
+                    <ul style="display: flex; gap: 0.5rem; list-style: none; padding: 0;">
+                        @if (currentPage > 1)
+                        {
+                            <li><button @onclick="() => ChangePage(currentPage - 1)">前へ</button></li>
+                        }
+                        <li><span>ページ @currentPage / @totalPages</span></li>
+                        @if (currentPage < totalPages)
+                        {
+                            <li><button @onclick="() => ChangePage(currentPage + 1)">次へ</button></li>
+                        }
+                    </ul>
+                </nav>
+            }
+        </section>
+    }
+</article>
+
+@code {
+    private List<LogEntry> logs = new();
+    private bool loading = true;
+    private string selectedLogType = "";
+    private DateOnly? startDate;
+    private DateOnly? endDate;
+    private int currentPage = 1;
+    private int pageSize = 50;
+    private int totalCount = 0;
+    private int totalPages = 0;
+    private bool iconsInitialized = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLogs();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !iconsInitialized)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("lucide.createIcons");
+                iconsInitialized = true;
+            }
+            catch { }
+        }
+    }
+
+    private void NavigateToHome()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+    private async Task LoadLogs()
+    {
+        loading = true;
+        try
+        {
+            LogType? logType = string.IsNullOrEmpty(selectedLogType) ? null : Enum.Parse<LogType>(selectedLogType);
+            DateTime? start = startDate.HasValue ? startDate.Value.ToDateTime(TimeOnly.MinValue) : null;
+            DateTime? end = endDate.HasValue ? endDate.Value.ToDateTime(TimeOnly.MinValue) : null;
+
+            var skip = (currentPage - 1) * pageSize;
+            logs = await LogRepository.GetLogsAsync(logType, start, end, skip, pageSize);
+            totalCount = await LogRepository.GetLogCountAsync(logType, start, end);
+            totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ログ読み込みエラー: {ex.Message}");
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        currentPage = 1;
+        await LoadLogs();
+    }
+
+    private async Task ChangePage(int page)
+    {
+        currentPage = page;
+        await LoadLogs();
+    }
+}
