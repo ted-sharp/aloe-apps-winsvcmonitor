@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Aloe.Apps.WindowsServiceMonitorLib\Aloe.Apps.WindowsServiceMonitorLib.csproj" />
+    <ProjectReference Include="..\Aloe.Apps.WindowsServiceMonitorLib\Aloe.Apps.WindowsServiceMonitorLib.csproj" />
   </ItemGroup>
 
   <ItemGroup>

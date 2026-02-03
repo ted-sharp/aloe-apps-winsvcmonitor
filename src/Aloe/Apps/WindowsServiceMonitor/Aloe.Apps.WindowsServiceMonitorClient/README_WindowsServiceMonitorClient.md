@@ -23,10 +23,10 @@
 
 ```bash
 # ビルド
-dotnet build "src/Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitorClient/Aloe.Apps.WindowsServiceMonitorClient.csproj"
+dotnet build "src/Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitorClient/Aloe.Apps.WindowsServiceMonitorClient.csproj"
 
 # 実行
-dotnet run --project "src/Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitorClient/Aloe.Apps.WindowsServiceMonitorClient.csproj"
+dotnet run --project "src/Aloe/Apps/WindowsServiceMonitor/Aloe.Apps.WindowsServiceMonitorClient/Aloe.Apps.WindowsServiceMonitorClient.csproj"
 ```
 
 ## 設定ファイル
