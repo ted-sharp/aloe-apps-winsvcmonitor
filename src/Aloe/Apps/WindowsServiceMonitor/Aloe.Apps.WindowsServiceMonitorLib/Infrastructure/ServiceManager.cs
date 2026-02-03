@@ -15,6 +15,7 @@ public class ServiceManager : IServiceManager
     private readonly IMonitoredServiceRepository _repository;
     private readonly IServiceRegistrar _registrar;
     private readonly ILogRepository _logRepository;
+    private readonly IOperationTracker _operationTracker;
 
     public ServiceManager(
         IWin32ServiceApi win32Api,
@@ -22,7 +23,8 @@ public class ServiceManager : IServiceManager
         IOptions<WindowsServiceMonitorOptions> options,
         IMonitoredServiceRepository repository,
         IServiceRegistrar registrar,
-        ILogRepository logRepository)
+        ILogRepository logRepository,
+        IOperationTracker operationTracker)
     {
         _win32Api = win32Api;
         _logger = logger;
@@ -30,6 +32,7 @@ public class ServiceManager : IServiceManager
         _repository = repository;
         _registrar = registrar;
         _logRepository = logRepository;
+        _operationTracker = operationTracker;
     }
 
     public async Task<List<ServiceInfo>> GetAllServicesAsync()
@@ -96,6 +99,9 @@ public class ServiceManager : IServiceManager
 
                 _logger.LogInformation("サービス '{ServiceName}' が起動されました", serviceName);
 
+                // 期待される状態遷移を記録（状態変化ログの重複を防ぐため）
+                _operationTracker.RegisterExpectedTransition(serviceName, ConvertStatus(oldStatus), ServiceStatus.Running);
+
                 // ログ記録（成功時）
                 await _logRepository.AddLogAsync(new LogEntry
                 {
@@ -160,11 +166,32 @@ public class ServiceManager : IServiceManager
                     errorMessage = win32Ex.Message;
                 }
 
+                // ログ記録
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{serviceName}' の起動に失敗しました: {errorMessage}",
+                    ServiceName = serviceName,
+                    Result = "失敗"
+                });
+
                 return ServiceOperationResult.FailureResult($"起動に失敗しました: {errorMessage}");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "サービス '{ServiceName}' の操作でエラーが発生しました", serviceName);
+
+                // ログ記録
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{serviceName}' の起動に失敗しました: {ex.Message}",
+                    ServiceName = serviceName,
+                    Result = "失敗"
+                });
+
                 return ServiceOperationResult.FailureResult($"エラーが発生しました: {ex.Message}");
             }
         });
@@ -202,6 +229,9 @@ public class ServiceManager : IServiceManager
                 service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
 
                 _logger.LogInformation("サービス '{ServiceName}' が停止されました", serviceName);
+
+                // 期待される状態遷移を記録（状態変化ログの重複を防ぐため）
+                _operationTracker.RegisterExpectedTransition(serviceName, ConvertStatus(oldStatus), ServiceStatus.Stopped);
 
                 // ログ記録（成功時）
                 await _logRepository.AddLogAsync(new LogEntry
@@ -266,11 +296,32 @@ public class ServiceManager : IServiceManager
                     errorMessage = win32Ex.Message;
                 }
 
+                // ログ記録
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{serviceName}' の停止に失敗しました: {errorMessage}",
+                    ServiceName = serviceName,
+                    Result = "失敗"
+                });
+
                 return ServiceOperationResult.FailureResult($"停止に失敗しました: {errorMessage}");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "サービス '{ServiceName}' の操作でエラーが発生しました", serviceName);
+
+                // ログ記録
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{serviceName}' の停止に失敗しました: {ex.Message}",
+                    ServiceName = serviceName,
+                    Result = "失敗"
+                });
+
                 return ServiceOperationResult.FailureResult($"エラーが発生しました: {ex.Message}");
             }
         });
@@ -303,12 +354,18 @@ public class ServiceManager : IServiceManager
                 {
                     service.Stop();
                     service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
+
+                    // 期待される状態遷移を記録: Running → Stopped
+                    _operationTracker.RegisterExpectedTransition(serviceName, ConvertStatus(oldStatus), ServiceStatus.Stopped);
                 }
 
                 service.Start();
                 service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
 
                 _logger.LogInformation("サービス '{ServiceName}' が再起動されました", serviceName);
+
+                // 期待される状態遷移を記録: Stopped → Running
+                _operationTracker.RegisterExpectedTransition(serviceName, ServiceStatus.Stopped, ServiceStatus.Running);
 
                 // ログ記録（成功時）
                 await _logRepository.AddLogAsync(new LogEntry
@@ -373,11 +430,32 @@ public class ServiceManager : IServiceManager
                     errorMessage = win32Ex.Message;
                 }
 
+                // ログ記録
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{serviceName}' の再起動に失敗しました: {errorMessage}",
+                    ServiceName = serviceName,
+                    Result = "失敗"
+                });
+
                 return ServiceOperationResult.FailureResult($"再起動に失敗しました: {errorMessage}");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "サービス '{ServiceName}' の操作でエラーが発生しました", serviceName);
+
+                // ログ記録
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{serviceName}' の再起動に失敗しました: {ex.Message}",
+                    ServiceName = serviceName,
+                    Result = "失敗"
+                });
+
                 return ServiceOperationResult.FailureResult($"エラーが発生しました: {ex.Message}");
             }
         });
@@ -487,6 +565,28 @@ public class ServiceManager : IServiceManager
             var configFromRepo = (await _repository.GetAllAsync()).FirstOrDefault(x =>
                 x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
             var config = configFromSettings ?? configFromRepo;
+
+            // サービスの存在を例外なしでチェック
+            if (!_win32Api.ServiceExists(serviceName))
+            {
+                // 設定にあれば未登録でも一覧に表示（登録ボタンから sc create 可能）
+                if (config != null)
+                {
+                    return new ServiceInfo
+                    {
+                        ServiceName = serviceName,
+                        DisplayName = config.DisplayName,
+                        Description = config.Description,
+                        Status = ServiceStatus.Unknown,
+                        StartupType = "未登録",
+                        ProcessId = 0,
+                        BinaryPath = config.BinaryPath ?? string.Empty,
+                        BinaryPathAlt = config.BinaryPathAlt,
+                        IsCritical = config.Critical
+                    };
+                }
+                return null;
+            }
 
             try
             {
@@ -754,6 +854,76 @@ public class ServiceManager : IServiceManager
     }
 
     /// <summary>
+    /// Registers a Windows service using sc create command.
+    /// </summary>
+    public async Task<ServiceOperationResult> RegisterServiceAsync(ServiceRegistrationRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(request.ServiceName))
+            {
+                return ServiceOperationResult.FailureResult("サービス名は空にできません");
+            }
+
+            // Validate service name format
+            if (!System.Text.RegularExpressions.Regex.IsMatch(request.ServiceName, @"^[a-zA-Z0-9_\-]+$"))
+            {
+                return ServiceOperationResult.FailureResult("無効なサービス名です");
+            }
+
+            var result = await _registrar.RegisterServiceAsync(request);
+
+            if (result.Success)
+            {
+                _logger.LogInformation("サービス '{ServiceName}' を登録しました", request.ServiceName);
+
+                // 期待される状態遷移を記録: Unknown → Stopped（登録後は停止状態）
+                _operationTracker.RegisterExpectedTransition(request.ServiceName, ServiceStatus.Unknown, ServiceStatus.Stopped);
+
+                // ログ記録（成功時）
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{request.ServiceName}' を登録しました (不明→停止)",
+                    ServiceName = request.ServiceName,
+                    Result = "成功"
+                });
+            }
+            else
+            {
+                // ログ記録（失敗時）
+                await _logRepository.AddLogAsync(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    Type = LogType.Operation,
+                    Message = $"サービス '{request.ServiceName}' の登録に失敗しました: {result.Message}",
+                    ServiceName = request.ServiceName,
+                    Result = "失敗"
+                });
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "サービス '{ServiceName}' の登録に失敗しました", request.ServiceName);
+
+            // ログ記録（例外発生時）
+            await _logRepository.AddLogAsync(new LogEntry
+            {
+                Timestamp = DateTime.Now,
+                Type = LogType.Operation,
+                Message = $"サービス '{request.ServiceName}' の登録に失敗しました: {ex.Message}",
+                ServiceName = request.ServiceName,
+                Result = "失敗"
+            });
+
+            return ServiceOperationResult.FailureResult($"登録に失敗しました: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Unregisters the Windows service only; the service remains in the monitoring list with status Unknown.
     /// </summary>
     public async Task<ServiceOperationResult> DeleteServiceAsync(string serviceName)
@@ -773,6 +943,7 @@ public class ServiceManager : IServiceManager
 
             // 操作前のステータスを取得（停止前に）
             ServiceControllerStatus? oldStatus = null;
+            bool wasStopped = false;
             try
             {
                 var sc = new ServiceController(serviceName);
@@ -789,6 +960,13 @@ public class ServiceManager : IServiceManager
                     sc.Stop();
                     sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
                     _logger.LogInformation("サービス '{ServiceName}' を停止しました", serviceName);
+                    wasStopped = true;
+
+                    // 期待される状態遷移を記録: Running → Stopped
+                    if (oldStatus.HasValue)
+                    {
+                        _operationTracker.RegisterExpectedTransition(serviceName, ConvertStatus(oldStatus.Value), ServiceStatus.Stopped);
+                    }
                 }
             }
             catch (Exception ex)
@@ -816,10 +994,17 @@ public class ServiceManager : IServiceManager
 
             _logger.LogInformation("サービス '{ServiceName}' を Windows から解除しました", serviceName);
 
-            // ログ記録（成功時）
-            string statusChange = oldStatus.HasValue
-                ? $" ({ConvertStatusToJapanese(oldStatus.Value)}→停止→不明)"
-                : "";
+            // 期待される状態遷移を記録: Stopped → Unknown
+            _operationTracker.RegisterExpectedTransition(serviceName, ServiceStatus.Stopped, ServiceStatus.Unknown);
+
+            // ログ記録（成功時）- 停止操作を実行した場合のみ「→停止」を含める
+            string statusChange = "";
+            if (oldStatus.HasValue)
+            {
+                statusChange = wasStopped
+                    ? $" ({ConvertStatusToJapanese(oldStatus.Value)}→停止→不明)"
+                    : $" ({ConvertStatusToJapanese(oldStatus.Value)}→不明)";
+            }
             await _logRepository.AddLogAsync(new LogEntry
             {
                 Timestamp = DateTime.Now,

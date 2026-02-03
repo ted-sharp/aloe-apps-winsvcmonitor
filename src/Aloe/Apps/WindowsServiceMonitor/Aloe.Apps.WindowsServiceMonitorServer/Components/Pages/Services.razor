@@ -4,7 +4,6 @@
 @using Aloe.Apps.WindowsServiceMonitorServer.Components.Shared
 @attribute [Authorize]
 @inject IServiceManager ServiceManager
-@inject IServiceRegistrar ServiceRegistrar
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 @implements IAsyncDisposable
@@ -296,7 +295,7 @@
                 BinaryPath = service.BinaryPath,
                 BinaryPathAlt = service.BinaryPathAlt
             };
-            var result = await ServiceRegistrar.RegisterServiceAsync(request);
+            var result = await ServiceManager.RegisterServiceAsync(request);
             if (result.Success)
             {
                 ShowStatusMessage("サービスを登録しました", true);

@@ -11,18 +11,21 @@ public class BackgroundWindowsServiceMonitor : BackgroundService
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<BackgroundWindowsServiceMonitor> _logger;
     private readonly WindowsServiceMonitorOptions _options;
+    private readonly IOperationTracker _operationTracker;
     private Dictionary<string, ServiceStatus> _previousStatuses = new();
 
     public BackgroundWindowsServiceMonitor(
         IHubContext<WindowsServiceMonitorHub> hubContext,
         IServiceScopeFactory serviceScopeFactory,
         ILogger<BackgroundWindowsServiceMonitor> logger,
-        IOptions<WindowsServiceMonitorOptions> options)
+        IOptions<WindowsServiceMonitorOptions> options,
+        IOperationTracker operationTracker)
     {
         _hubContext = hubContext;
         _serviceScopeFactory = serviceScopeFactory;
         _logger = logger;
         _options = options.Value;
+        _operationTracker = operationTracker;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -67,6 +70,13 @@ public class BackgroundWindowsServiceMonitor : BackgroundService
                 if (stoppingToken.IsCancellationRequested)
                     break;
 
+                // 操作によるステータス変更があれば、前の状態を更新して誤検知を防ぐ
+                var targetStatus = _operationTracker.ConsumeTargetStatus(service.ServiceName);
+                if (targetStatus.HasValue)
+                {
+                    _previousStatuses[service.ServiceName] = targetStatus.Value;
+                }
+
                 if (_previousStatuses.TryGetValue(service.ServiceName, out var previousStatus))
                 {
                     if (previousStatus != service.Status)
@@ -75,7 +85,7 @@ public class BackgroundWindowsServiceMonitor : BackgroundService
                             "サービス '{ServiceName}' の状態が変更されました: {OldStatus} -> {NewStatus}",
                             service.ServiceName, previousStatus, service.Status);
 
-                        // ログ記録
+                        // ログ記録（予期しない状態変化のみ）
                         var logRepository = scope.ServiceProvider.GetRequiredService<ILogRepository>();
                         await logRepository.AddLogAsync(new LogEntry
                         {

@@ -44,6 +44,35 @@ public class Win32ServiceApi : IWin32ServiceApi
         _logger = logger;
     }
 
+    public bool ServiceExists(string serviceName)
+    {
+        IntPtr scManager = IntPtr.Zero;
+        IntPtr service = IntPtr.Zero;
+
+        try
+        {
+            scManager = OpenSCManager(null, null, SC_MANAGER_CONNECT);
+            if (scManager == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            service = OpenService(scManager, serviceName, SERVICE_QUERY_STATUS);
+            return service != IntPtr.Zero;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            if (service != IntPtr.Zero)
+                CloseServiceHandle(service);
+            if (scManager != IntPtr.Zero)
+                CloseServiceHandle(scManager);
+        }
+    }
+
     public int? GetProcessId(string serviceName)
     {
         IntPtr scManager = IntPtr.Zero;

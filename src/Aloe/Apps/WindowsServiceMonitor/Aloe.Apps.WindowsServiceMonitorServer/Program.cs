@@ -71,6 +71,9 @@ var logsDir = Path.Combine(AppContext.BaseDirectory, "logs");
 builder.Services.AddSingleton<ILogRepository>(
     sp => new JsonLogRepository(logsDir, sp.GetRequiredService<ILogger<JsonLogRepository>>()));
 
+// Operation Tracker (Singleton to share state between scopes)
+builder.Services.AddSingleton<IOperationTracker, OperationTracker>();
+
 builder.Services.AddScoped<IWin32ServiceApi, Win32ServiceApi>();
 builder.Services.AddScoped<IServiceManager, ServiceManager>();
 builder.Services.AddScoped<IServiceRegistrar, ServiceRegistrar>();
