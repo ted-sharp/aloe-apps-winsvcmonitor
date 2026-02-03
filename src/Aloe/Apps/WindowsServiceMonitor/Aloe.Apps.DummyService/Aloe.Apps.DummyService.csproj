@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <PublishAot>true</PublishAot>
+    <PublishAot>false</PublishAot>
     <UserSecretsId>dotnet-Aloe.Apps.DummyService-8ede5acf-02e0-464d-bb90-a032be50711a</UserSecretsId>
     <AssemblyName>DummyService</AssemblyName>
   </PropertyGroup>

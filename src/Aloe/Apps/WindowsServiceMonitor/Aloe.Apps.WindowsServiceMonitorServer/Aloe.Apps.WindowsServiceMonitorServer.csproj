@@ -11,7 +11,10 @@
 
   <ItemGroup>
     <ProjectReference Include="../Aloe.Apps.WindowsServiceMonitorLib/Aloe.Apps.WindowsServiceMonitorLib.csproj" />
-    <ProjectReference Include="..\Aloe.Apps.DummyService\Aloe.Apps.DummyService.csproj" />
+    <ProjectReference Include="..\Aloe.Apps.DummyService\Aloe.Apps.DummyService.csproj">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>contentFiles</ExcludeAssets>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
