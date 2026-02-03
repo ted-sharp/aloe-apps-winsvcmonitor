@@ -37,6 +37,8 @@ Four-project structure targeting .NET 10.0:
 | `IServiceRegistrar` | `ServiceRegistrar` | OS-level service registration/unregistration via `sc.exe` |
 | `IWin32ServiceApi` | `Win32ServiceApi` | P/Invoke to `advapi32.dll` for PID, uptime, memory usage |
 | `IMonitoredServiceRepository` | `JsonMonitoredServiceRepository` | CRUD for `appsettings.services.json` with semaphore-based thread safety |
+| `ILogRepository` | `JsonLogRepository` | Operation log recording/retrieval/deletion (date-based file splitting, pagination) |
+| `IOperationTracker` | `OperationTracker` | Service operation tracking, prevents duplicate status change logs |
 
 ### Data Flow
 
@@ -61,6 +63,18 @@ Cookie-based authentication. Login endpoint: `POST /api/login`. Password configu
 ### Real-time Updates
 
 `BackgroundWindowsServiceMonitor` (hosted service) polls service status. `WindowsServiceMonitorHub` (SignalR at `/servicemonitorhub`) pushes updates. Blazor pages also use `PeriodicTimer` (3-second interval) for client-side polling.
+
+### Logging and Audit Features
+
+Three types of logs recorded (at `/logs` page):
+
+- **Access logs**: Login/logout events with IP address, timestamp, HTTP method
+- **Operation logs**: Service operations (start/stop/restart/register/delete) with success/failure results
+- **Status change logs**: Background monitoring detecting unexpected service state changes
+
+Log storage uses date-based JSON files (`custom_logs_YYYYMMDD.json`) with automatic file rotation when size limit reached (10,000 logs/file max). Thread-safe concurrent access control via `SemaphoreSlim`.
+
+`OperationTracker` tracks intentional service operations with 30-second window to distinguish user-initiated changes from unexpected state changes, preventing duplicate status change log entries.
 
 ## UI
 
