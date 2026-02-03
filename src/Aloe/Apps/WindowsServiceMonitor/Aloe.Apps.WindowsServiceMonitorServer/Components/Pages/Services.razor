@@ -2,9 +2,11 @@
 @using Aloe.Apps.WindowsServiceMonitorLib.Models
 @using Aloe.Apps.WindowsServiceMonitorLib.Interfaces
 @using Aloe.Apps.WindowsServiceMonitorServer.Components.Shared
+@using Microsoft.Extensions.Logging
 @attribute [Authorize]
 @inject IServiceManager ServiceManager
 @inject IJSRuntime JS
+@inject ILogger<Services> Logger
 @rendermode InteractiveServer
 @implements IAsyncDisposable
 
@@ -76,33 +78,38 @@
                                 </span>
                             </td>
                             <td rowspan="2">
-                                <div role="group">
+                                <div role="group" @onclick:stopPropagation="true">
                                     <button class="success icon-only"
                                             @onclick="() => StartService(service.ServiceName)"
+                                            @onclick:stopPropagation="true"
                                             disabled="@(service.Status != ServiceStatus.Stopped)"
                                             title="起動">
                                         <i data-lucide="play"></i>
                                     </button>
                                     <button class="danger icon-only"
                                             @onclick="() => StopService(service.ServiceName)"
+                                            @onclick:stopPropagation="true"
                                             disabled="@(service.Status != ServiceStatus.Running)"
                                             title="停止">
                                         <i data-lucide="square"></i>
                                     </button>
                                     <button class="warning icon-only"
                                             @onclick="() => RestartService(service.ServiceName)"
+                                            @onclick:stopPropagation="true"
                                             disabled="@(service.Status != ServiceStatus.Running)"
                                             title="再起動">
                                         <i data-lucide="rotate-cw"></i>
                                     </button>
                                     <button class="contrast outline icon-only"
                                             @onclick="() => RegisterService(service)"
+                                            @onclick:stopPropagation="true"
                                             disabled="@(service.Status != ServiceStatus.Unknown || string.IsNullOrEmpty(service.BinaryPath))"
                                             title="登録">
                                         <i data-lucide="plus-circle"></i>
                                     </button>
                                     <button class="delete icon-only"
                                             @onclick="() => DeleteService(service.ServiceName)"
+                                            @onclick:stopPropagation="true"
                                             disabled="@(service.Status != ServiceStatus.Stopped)"
                                             title="解除">
                                         <i data-lucide="trash-2"></i>
@@ -206,6 +213,7 @@
     private bool statusMessageIsSuccess = false;
     private PeriodicTimer? pollingTimer;
     private string? selectedServiceName;
+    private CancellationTokenSource? _messageAutoHideCts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -234,9 +242,18 @@
     private async Task RefreshServices()
     {
         isLoadingServices = true;
-        try { services = await ServiceManager.GetAllServicesAsync(); }
-        catch { }
-        finally { isLoadingServices = false; }
+        try
+        {
+            services = await ServiceManager.GetAllServicesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "サービス一覧の取得に失敗しました");
+        }
+        finally
+        {
+            isLoadingServices = false;
+        }
     }
 
     private async Task StartService(string name)
@@ -314,6 +331,11 @@
 
     private void ShowStatusMessage(string message, bool isSuccess)
     {
+        // 既存の自動消去タスクをキャンセル
+        _messageAutoHideCts?.Cancel();
+        _messageAutoHideCts?.Dispose();
+        _messageAutoHideCts = null;
+
         statusMessage = message;
         statusMessageIsSuccess = isSuccess;
 
@@ -333,13 +355,18 @@
         // 成功メッセージのみ自動消去、エラーメッセージは手動で閉じる必要
         if (isSuccess)
         {
-            _ = Task.Delay(4000).ContinueWith(_ =>
+            _messageAutoHideCts = new CancellationTokenSource();
+            var token = _messageAutoHideCts.Token;
+            _ = Task.Delay(4000, token).ContinueWith(task =>
             {
-                statusMessage = string.Empty;
-                statusMessageTitle = string.Empty;
-                statusMessageDetail = string.Empty;
-                InvokeAsync(StateHasChanged);
-            });
+                if (!task.IsCanceled)
+                {
+                    statusMessage = string.Empty;
+                    statusMessageTitle = string.Empty;
+                    statusMessageDetail = string.Empty;
+                    InvokeAsync(StateHasChanged);
+                }
+            }, token);
         }
     }
 
@@ -456,6 +483,8 @@
 
     async ValueTask IAsyncDisposable.DisposeAsync()
     {
+        _messageAutoHideCts?.Cancel();
+        _messageAutoHideCts?.Dispose();
         pollingTimer?.Dispose();
     }
 }

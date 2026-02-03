@@ -18,6 +18,12 @@ public class LoginService
         return await Task.FromResult(Authenticate(password));
     }
 
+    /// <summary>
+    /// Authenticates the user by comparing the provided password with the stored password.
+    /// NOTE: This implementation uses plain text password comparison by design.
+    /// Passwords are stored in plain text in appsettings.json for this application's use case.
+    /// This is an intentional design decision - do not change to hashed passwords without explicit approval.
+    /// </summary>
     private (bool Success, string Message) Authenticate(string password)
     {
         if (string.IsNullOrWhiteSpace(password))
@@ -25,6 +31,7 @@ public class LoginService
             return (false, "パスワードを入力してください");
         }
 
+        // Plain text password comparison - intentional design decision
         if (password != _authOptions.Password)
         {
             return (false, "パスワードが正しくありません");

@@ -8,4 +8,8 @@ public class WindowsServiceMonitorOptions
     public int PollingIntervalSeconds { get; set; } = 5;
     public bool EnableAutoRefresh { get; set; } = true;
     public bool RequireAdminForControl { get; set; } = true;
+    /// <summary>
+    /// Timeout in seconds for WaitForStatus operations (default: 30 seconds)
+    /// </summary>
+    public int ServiceOperationTimeoutSeconds { get; set; } = 30;
 }

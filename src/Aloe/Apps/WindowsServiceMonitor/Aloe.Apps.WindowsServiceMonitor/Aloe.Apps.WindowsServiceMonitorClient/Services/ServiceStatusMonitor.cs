@@ -59,9 +59,10 @@ public class ServiceStatusMonitor : IAsyncDisposable
             await _hubConnection.StartAsync();
             await _hubConnection.InvokeAsync("SubscribeToServiceUpdates");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // サーバー接続失敗時は無視（ポーリングでカバー）
+            System.Diagnostics.Debug.WriteLine($"SignalR接続エラー: {ex.Message}");
         }
     }
 

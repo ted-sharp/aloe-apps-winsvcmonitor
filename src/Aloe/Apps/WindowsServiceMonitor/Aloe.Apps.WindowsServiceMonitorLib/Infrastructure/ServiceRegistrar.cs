@@ -158,6 +158,10 @@ public class ServiceRegistrar : IServiceRegistrar
         };
     }
 
+    // sc.exe は非標準的な引数パーシングを使うため、ArgumentList ではなく Arguments 文字列を使用すること。
+    // sc.exe は "binPath= \"値\"" のように key= と値が別トークンである必要があるが、
+    // ArgumentList を使うと "binPath= 値" が1つの引用符付き引数になり、正しくパースされない。
+    // 入力値のバリデーションは ServiceManager 側の正規表現チェックで担保されている。
     private async Task<(bool Success, string Message)> ExecuteScCommand(string arguments)
     {
         try
