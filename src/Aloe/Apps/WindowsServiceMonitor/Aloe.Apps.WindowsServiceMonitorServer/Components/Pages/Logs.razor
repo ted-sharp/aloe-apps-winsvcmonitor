@@ -7,29 +7,20 @@
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 
-<PageTitle>ログ閲覧 - Windows Service Monitor</PageTitle>
+<PageTitle>ログ閲覧</PageTitle>
 
-<nav>
-    <hgroup>
-        <h1>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 12h18"/>
-                <path d="M3 18h18"/>
-                <path d="M3 6h18"/>
-            </svg>
-            ログ閲覧
-        </h1>
-    </hgroup>
-    <button class="icon-button" @onclick="NavigateToHome" title="閉じる">
-        <i data-lucide="x"></i>
-    </button>
-</nav>
+<main class="container">
+    <nav>
+        <hgroup>
+            <h1>ログ閲覧</h1>
+            <p>アクセスログ、操作ログ、サービスステータス変化ログを表示します</p>
+        </hgroup>
+        <button class="icon-button" @onclick="NavigateToHome" title="閉じる">
+            <i data-lucide="x"></i>
+        </button>
+    </nav>
 
-<p>アクセスログ、操作ログ、サービスステータス変化ログを表示します</p>
-
-<article>
-
-    <section>
+    <article>
         <form @onsubmit="ApplyFilters">
             <div class="grid">
                 <label>
@@ -53,23 +44,23 @@
                 </label>
             </div>
 
-            <button type="submit">フィルター適用</button>
+            <button type="submit"><i data-lucide="filter"></i>フィルター適用</button>
         </form>
-    </section>
+    </article>
 
     @if (loading)
     {
-        <section aria-busy="true">読み込み中...</section>
+        <article aria-busy="true">読み込み中...</article>
     }
     else if (logs.Count == 0)
     {
-        <section>
+        <article>
             <p>ログがありません</p>
-        </section>
+        </article>
     }
     else
     {
-        <section>
+        <article>
             <div class="table-overflow">
                 <table>
                     <thead>
@@ -89,37 +80,21 @@
                                     @switch (log.Type)
                                     {
                                         case LogType.Access:
-                                            <span class="status-badge status-running">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                                                </svg>
-                                                アクセス
+                                            <span class="status-badge status-badge-running">
+                                                <i data-lucide="activity"></i>
+                                                <span>アクセス</span>
                                             </span>
                                             break;
                                         case LogType.Operation:
-                                            <span class="status-badge status-stopped">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/>
-                                                    <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>
-                                                    <path d="M12 2v2"/>
-                                                    <path d="M12 20v2"/>
-                                                    <path d="m4.93 4.93 1.41 1.41"/>
-                                                    <path d="m17.66 17.66 1.41 1.41"/>
-                                                    <path d="M2 12h2"/>
-                                                    <path d="M20 12h2"/>
-                                                    <path d="m6.34 17.66-1.41 1.41"/>
-                                                    <path d="m19.07 4.93-1.41 1.41"/>
-                                                </svg>
-                                                操作
+                                            <span class="status-badge status-badge-stopped">
+                                                <i data-lucide="settings"></i>
+                                                <span>操作</span>
                                             </span>
                                             break;
                                         case LogType.StatusChange:
-                                            <span class="status-badge status-paused">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <line x1="12" x2="12" y1="2" y2="22"/>
-                                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                                                </svg>
-                                                ステータス変化
+                                            <span class="status-badge status-badge-paused">
+                                                <i data-lucide="git-commit"></i>
+                                                <span>ステータス変化</span>
                                             </span>
                                             break;
                                     }
@@ -156,22 +131,22 @@
             @if (totalPages > 1)
             {
                 <nav aria-label="ページネーション">
-                    <ul style="display: flex; gap: 0.5rem; list-style: none; padding: 0;">
+                    <div role="group" style="display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
                         @if (currentPage > 1)
                         {
-                            <li><button @onclick="() => ChangePage(currentPage - 1)">前へ</button></li>
+                            <button @onclick="() => ChangePage(currentPage - 1)"><i data-lucide="chevron-left"></i>前へ</button>
                         }
-                        <li><span>ページ @currentPage / @totalPages</span></li>
+                        <span>ページ @currentPage / @totalPages</span>
                         @if (currentPage < totalPages)
                         {
-                            <li><button @onclick="() => ChangePage(currentPage + 1)">次へ</button></li>
+                            <button @onclick="() => ChangePage(currentPage + 1)">次へ<i data-lucide="chevron-right"></i></button>
                         }
-                    </ul>
+                    </div>
                 </nav>
             }
-        </section>
+        </article>
     }
-</article>
+</main>
 
 @code {
     private List<LogEntry> logs = new();
