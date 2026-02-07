@@ -402,11 +402,7 @@ public class JsonLogRepository : ILogRepository
             await File.WriteAllTextAsync(tempFilePath, json);
 
             // 既存ファイルを削除してリネーム
-            if (File.Exists(filePath))
-            {
-                File.Delete(filePath);
-            }
-            File.Move(tempFilePath, filePath);
+            File.Move(tempFilePath, filePath, overwrite: true);
         }
         catch (Exception ex)
         {

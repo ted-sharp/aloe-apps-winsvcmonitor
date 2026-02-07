@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 using Aloe.Apps.WindowsServiceMonitorLib.Interfaces;
@@ -12,7 +13,7 @@ public class BackgroundWindowsServiceMonitor : BackgroundService
     private readonly ILogger<BackgroundWindowsServiceMonitor> _logger;
     private readonly WindowsServiceMonitorOptions _options;
     private readonly IOperationTracker _operationTracker;
-    private Dictionary<string, ServiceStatus> _previousStatuses = new();
+    private readonly ConcurrentDictionary<string, ServiceStatus> _previousStatuses = new();
 
     public BackgroundWindowsServiceMonitor(
         IHubContext<WindowsServiceMonitorHub> hubContext,

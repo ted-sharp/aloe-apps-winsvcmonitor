@@ -98,7 +98,7 @@ public class ServiceRegistrar : IServiceRegistrar
         }
     }
 
-    private static string ResolveBinaryPath(string binaryPath, string? binaryPathAlt)
+    internal static string ResolveBinaryPath(string binaryPath, string? binaryPathAlt)
     {
         var primary = ResolveSinglePath(binaryPath);
         if (!string.IsNullOrEmpty(primary) && File.Exists(primary))
@@ -182,15 +182,17 @@ public class ServiceRegistrar : IServiceRegistrar
                 return (false, "プロセスの起動に失敗しました");
             }
 
+            var errorTask = process.StandardError.ReadToEndAsync();
+            var outputTask = process.StandardOutput.ReadToEndAsync();
             await process.WaitForExitAsync();
+
+            var error = await errorTask;
+            var output = await outputTask;
 
             if (process.ExitCode == 0)
             {
                 return (true, "成功");
             }
-
-            var error = await process.StandardError.ReadToEndAsync();
-            var output = await process.StandardOutput.ReadToEndAsync();
 
             return (false, $"Exit Code: {process.ExitCode}. Error: {error ?? output}");
         }

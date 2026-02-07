@@ -235,7 +235,7 @@ public partial class MainWindow : Window
 
             _pollingTimer?.Dispose();
             _trayIconManager.Dispose();
-            _ = _statusMonitor.DisposeAsync();
+            _statusMonitor.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(3));
         }
     }
 }

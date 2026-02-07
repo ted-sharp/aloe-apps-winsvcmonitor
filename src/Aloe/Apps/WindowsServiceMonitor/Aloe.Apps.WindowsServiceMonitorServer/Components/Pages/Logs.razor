@@ -158,8 +158,6 @@
     private int pageSize = 50;
     private int totalCount = 0;
     private int totalPages = 0;
-    private bool iconsInitialized = false;
-
     protected override async Task OnInitializedAsync()
     {
         await LoadLogs();
@@ -167,15 +165,11 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !iconsInitialized)
+        try
         {
-            try
-            {
-                await JS.InvokeVoidAsync("lucide.createIcons");
-                iconsInitialized = true;
-            }
-            catch { }
+            await JS.InvokeVoidAsync("lucide.createIcons");
         }
+        catch { }
     }
 
     private void NavigateToHome()

@@ -1,10 +1,14 @@
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace Aloe.Apps.WindowsServiceMonitorClient.Services;
 
 public class TrayIconManager : IDisposable
 {
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool DestroyIcon(IntPtr hIcon);
+
     private readonly NotifyIcon _notifyIcon;
     private bool _disposed;
 
@@ -40,16 +44,31 @@ public class TrayIconManager : IDisposable
 
     private Icon CreateIcon(Color color)
     {
-        var bitmap = new Bitmap(16, 16);
-        using (var graphics = Graphics.FromImage(bitmap))
+        // 古いアイコンのHICONを解放
+        var oldIcon = _notifyIcon.Icon;
+
+        Icon newIcon;
+        using (var bitmap = new Bitmap(16, 16))
         {
-            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            using (var brush = new SolidBrush(color))
+            using (var graphics = Graphics.FromImage(bitmap))
             {
-                graphics.FillEllipse(brush, 0, 0, 16, 16);
+                graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                using (var brush = new SolidBrush(color))
+                {
+                    graphics.FillEllipse(brush, 0, 0, 16, 16);
+                }
             }
+            var hIcon = bitmap.GetHicon();
+            newIcon = Icon.FromHandle(hIcon);
         }
-        return Icon.FromHandle(bitmap.GetHicon());
+
+        if (oldIcon != null)
+        {
+            DestroyIcon(oldIcon.Handle);
+            oldIcon.Dispose();
+        }
+
+        return newIcon;
     }
 
     private ContextMenuStrip CreateContextMenu()

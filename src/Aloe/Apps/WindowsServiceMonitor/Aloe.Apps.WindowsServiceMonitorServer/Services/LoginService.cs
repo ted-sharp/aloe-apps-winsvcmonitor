@@ -13,9 +13,9 @@ public class LoginService
         _authOptions = authOptions.Value;
     }
 
-    public async Task<(bool Success, string Message)> AuthenticateAsync(string password)
+    public Task<(bool Success, string Message)> AuthenticateAsync(string password)
     {
-        return await Task.FromResult(Authenticate(password));
+        return Task.FromResult(Authenticate(password));
     }
 
     /// <summary>

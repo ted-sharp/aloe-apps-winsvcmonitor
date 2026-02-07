@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Aloe.Apps.WindowsServiceMonitorLib.Interfaces;
 using Aloe.Apps.WindowsServiceMonitorLib.Models;
 
 namespace Aloe.Apps.WindowsServiceMonitorServer.Services;
 
+[Authorize]
 public class WindowsServiceMonitorHub : Hub
 {
     private readonly IServiceManager _serviceManager;

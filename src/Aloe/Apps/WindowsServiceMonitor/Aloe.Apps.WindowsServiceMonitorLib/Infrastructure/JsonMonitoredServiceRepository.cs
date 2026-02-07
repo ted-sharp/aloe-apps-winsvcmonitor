@@ -13,7 +13,7 @@ namespace Aloe.Apps.WindowsServiceMonitorLib.Infrastructure;
 public class JsonMonitoredServiceRepository : IMonitoredServiceRepository
 {
     private readonly string _filePath;
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
+    private static readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly ILogger<JsonMonitoredServiceRepository> _logger;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -224,11 +224,7 @@ public class JsonMonitoredServiceRepository : IMonitoredServiceRepository
             await File.WriteAllTextAsync(tempPath, json_new);
 
             // Rename temp file to actual file (atomic operation on most systems)
-            if (File.Exists(_filePath))
-            {
-                File.Delete(_filePath);
-            }
-            File.Move(tempPath, _filePath);
+            File.Move(tempPath, _filePath, overwrite: true);
 
             _logger.LogInformation("Saved {ServiceCount} monitored services to {FilePath}", services.Count, _filePath);
         }
@@ -299,11 +295,7 @@ public class JsonMonitoredServiceRepository : IMonitoredServiceRepository
             await File.WriteAllTextAsync(tempPath, json);
 
             // Rename temp file to actual file
-            if (File.Exists(_filePath))
-            {
-                File.Delete(_filePath);
-            }
-            File.Move(tempPath, _filePath);
+            File.Move(tempPath, _filePath, overwrite: true);
 
             _logger.LogInformation("Saved service defaults to {FilePath}", _filePath);
         }

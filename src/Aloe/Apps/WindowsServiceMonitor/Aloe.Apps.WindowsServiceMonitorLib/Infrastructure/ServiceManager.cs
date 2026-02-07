@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.ServiceProcess;
+using System.Text.RegularExpressions;
 using Aloe.Apps.WindowsServiceMonitorLib.Interfaces;
 using Aloe.Apps.WindowsServiceMonitorLib.Models;
 using Microsoft.Extensions.Logging;
@@ -7,8 +8,10 @@ using Microsoft.Extensions.Options;
 
 namespace Aloe.Apps.WindowsServiceMonitorLib.Infrastructure;
 
-public class ServiceManager : IServiceManager
+public partial class ServiceManager : IServiceManager
 {
+    [GeneratedRegex(@"^[a-zA-Z0-9_\- ]+$")]
+    private static partial Regex ServiceNameRegex();
     private readonly IWin32ServiceApi _win32Api;
     private readonly ILogger<ServiceManager> _logger;
     private readonly WindowsServiceMonitorOptions _options;
@@ -68,17 +71,8 @@ public class ServiceManager : IServiceManager
 
     public async Task<ServiceOperationResult> StartServiceAsync(string serviceName)
     {
-        // 監視対象のサービスか確認
-        if (!await IsServiceMonitoredAsync(serviceName))
-        {
-            return ServiceOperationResult.FailureResult($"サービス '{serviceName}' は監視対象に登録されていません");
-        }
-
-        // サービス名の形式チェック
-        if (!System.Text.RegularExpressions.Regex.IsMatch(serviceName, @"^[a-zA-Z0-9_\- ]+$"))
-        {
-            return ServiceOperationResult.FailureResult("無効なサービス名です");
-        }
+        var validationResult = await ValidateMonitoredServiceAsync(serviceName);
+        if (validationResult != null) return validationResult;
 
         return await Task.Run(async () =>
         {
@@ -123,17 +117,8 @@ public class ServiceManager : IServiceManager
 
     public async Task<ServiceOperationResult> StopServiceAsync(string serviceName)
     {
-        // 監視対象のサービスか確認
-        if (!await IsServiceMonitoredAsync(serviceName))
-        {
-            return ServiceOperationResult.FailureResult($"サービス '{serviceName}' は監視対象に登録されていません");
-        }
-
-        // サービス名の形式チェック
-        if (!System.Text.RegularExpressions.Regex.IsMatch(serviceName, @"^[a-zA-Z0-9_\- ]+$"))
-        {
-            return ServiceOperationResult.FailureResult("無効なサービス名です");
-        }
+        var validationResult = await ValidateMonitoredServiceAsync(serviceName);
+        if (validationResult != null) return validationResult;
 
         return await Task.Run(async () =>
         {
@@ -178,17 +163,8 @@ public class ServiceManager : IServiceManager
 
     public async Task<ServiceOperationResult> RestartServiceAsync(string serviceName)
     {
-        // 監視対象のサービスか確認
-        if (!await IsServiceMonitoredAsync(serviceName))
-        {
-            return ServiceOperationResult.FailureResult($"サービス '{serviceName}' は監視対象に登録されていません");
-        }
-
-        // サービス名の形式チェック
-        if (!System.Text.RegularExpressions.Regex.IsMatch(serviceName, @"^[a-zA-Z0-9_\- ]+$"))
-        {
-            return ServiceOperationResult.FailureResult("無効なサービス名です");
-        }
+        var validationResult = await ValidateMonitoredServiceAsync(serviceName);
+        if (validationResult != null) return validationResult;
 
         return await Task.Run(async () =>
         {
@@ -296,7 +272,7 @@ public class ServiceManager : IServiceManager
                 return string.Empty;
             }
 
-            var binaryPath = ResolveBinaryPath(config.BinaryPath, config.BinaryPathAlt);
+            var binaryPath = ServiceRegistrar.ResolveBinaryPath(config.BinaryPath, config.BinaryPathAlt);
             _logger.LogInformation("Resolved binary path: {BinaryPath}", binaryPath);
 
             if (!File.Exists(binaryPath))
@@ -332,13 +308,16 @@ public class ServiceManager : IServiceManager
 
                     try
                     {
+                        // 出力の読み取りをWaitForExitの前に開始（デッドロック防止）
+                        var outputTask = process.StandardOutput.ReadToEndAsync();
+                        var errorTask = process.StandardError.ReadToEndAsync();
+
                         // プロセスの終了を待機（タイムアウト付き）
                         var waitTask = Task.Run(() => process.WaitForExit(), token);
                         await waitTask;
 
-                        // プロセスが終了したら出力を読み取る
-                        var output = await process.StandardOutput.ReadToEndAsync();
-                        var error = await process.StandardError.ReadToEndAsync();
+                        var output = await outputTask;
+                        var error = await errorTask;
 
                         _logger.LogInformation("Process output - Error: '{Error}', Output: '{Output}'", error, output);
 
@@ -384,31 +363,6 @@ public class ServiceManager : IServiceManager
             _logger.LogError(ex, "Error in GetExeConsoleOutputAsync");
             return string.Empty;
         }
-    }
-
-    private static string ResolveBinaryPath(string binaryPath, string? binaryPathAlt)
-    {
-        var primary = ResolveSinglePath(binaryPath);
-        if (!string.IsNullOrEmpty(primary) && File.Exists(primary))
-            return primary;
-        if (!string.IsNullOrWhiteSpace(binaryPathAlt))
-        {
-            var alt = ResolveSinglePath(binaryPathAlt);
-            if (File.Exists(alt))
-                return alt;
-            if (string.IsNullOrEmpty(primary))
-                return alt;
-        }
-        return primary;
-    }
-
-    private static string ResolveSinglePath(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-            return path;
-        if (Path.IsPathRooted(path))
-            return Path.GetFullPath(path);
-        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, path));
     }
 
     private async Task<ServiceInfo?> GetServiceByNameAsync(string serviceName)
@@ -536,22 +490,22 @@ public class ServiceManager : IServiceManager
         return ConvertStatusToJapanese(ConvertStatus(status));
     }
 
-    private void ValidateServiceName(string serviceName)
+    private static ServiceOperationResult? ValidateServiceName(string serviceName)
     {
         if (string.IsNullOrWhiteSpace(serviceName))
-        {
-            throw new ArgumentException("サービス名は空にできません", nameof(serviceName));
-        }
+            return ServiceOperationResult.FailureResult("サービス名は空にできません");
+        if (!ServiceNameRegex().IsMatch(serviceName))
+            return ServiceOperationResult.FailureResult("無効なサービス名です");
+        return null;
+    }
 
-        if (!_options.MonitoredServices.Any(x => x.ServiceName == serviceName))
-        {
-            throw new InvalidOperationException($"サービス '{serviceName}' はホワイトリストに登録されていません");
-        }
-
-        if (!System.Text.RegularExpressions.Regex.IsMatch(serviceName, @"^[a-zA-Z0-9_\- ]+$"))
-        {
-            throw new ArgumentException("無効なサービス名です", nameof(serviceName));
-        }
+    private async Task<ServiceOperationResult?> ValidateMonitoredServiceAsync(string serviceName)
+    {
+        var nameValidation = ValidateServiceName(serviceName);
+        if (nameValidation != null) return nameValidation;
+        if (!await IsServiceMonitoredAsync(serviceName))
+            return ServiceOperationResult.FailureResult($"サービス '{serviceName}' は監視対象に登録されていません");
+        return null;
     }
 
     /// <summary>
@@ -650,12 +604,13 @@ public class ServiceManager : IServiceManager
             try
             {
                 var allControllers = ServiceController.GetServices();
+                var repositoryServices = await _repository.GetAllAsync();
 
                 foreach (var sc in allControllers)
                 {
                     var config = _options.MonitoredServices.FirstOrDefault(x =>
                         x.ServiceName.Equals(sc.ServiceName, StringComparison.OrdinalIgnoreCase));
-                    var repoConfig = (await _repository.GetAllAsync()).FirstOrDefault(x =>
+                    var repoConfig = repositoryServices.FirstOrDefault(x =>
                         x.ServiceName.Equals(sc.ServiceName, StringComparison.OrdinalIgnoreCase));
 
                     try
@@ -716,16 +671,8 @@ public class ServiceManager : IServiceManager
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(request.ServiceName))
-            {
-                return ServiceOperationResult.FailureResult("サービス名は空にできません");
-            }
-
-            // Validate service name format
-            if (!System.Text.RegularExpressions.Regex.IsMatch(request.ServiceName, @"^[a-zA-Z0-9_\- ]+$"))
-            {
-                return ServiceOperationResult.FailureResult("無効なサービス名です");
-            }
+            var nameValidation = ValidateServiceName(request.ServiceName);
+            if (nameValidation != null) return nameValidation;
 
             var result = await _registrar.RegisterServiceAsync(request);
 
@@ -786,16 +733,8 @@ public class ServiceManager : IServiceManager
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(serviceName))
-            {
-                return ServiceOperationResult.FailureResult("サービス名は空にできません");
-            }
-
-            // Validate service name format
-            if (!System.Text.RegularExpressions.Regex.IsMatch(serviceName, @"^[a-zA-Z0-9_\- ]+$"))
-            {
-                return ServiceOperationResult.FailureResult("無効なサービス名です");
-            }
+            var nameValidation = ValidateServiceName(serviceName);
+            if (nameValidation != null) return nameValidation;
 
             // 操作前のステータスを取得（停止前に）
             ServiceControllerStatus? oldStatus = null;

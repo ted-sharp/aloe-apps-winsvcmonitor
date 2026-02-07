@@ -179,7 +179,7 @@ public class Win32ServiceApi : IWin32ServiceApi
         {
             try
             {
-                var controller = new System.ServiceProcess.ServiceController(serviceName);
+                using var controller = new System.ServiceProcess.ServiceController(serviceName);
                 var dependentServices = controller.DependentServices;
                 return dependentServices.Length;
             }
