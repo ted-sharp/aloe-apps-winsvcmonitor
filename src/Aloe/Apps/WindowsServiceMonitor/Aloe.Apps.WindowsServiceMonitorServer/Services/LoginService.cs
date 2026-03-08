@@ -10,12 +10,12 @@ public class LoginService
 
     public LoginService(IOptions<AuthOptions> authOptions)
     {
-        _authOptions = authOptions.Value;
+        this._authOptions = authOptions.Value;
     }
 
     public Task<(bool Success, string Message)> AuthenticateAsync(string password)
     {
-        return Task.FromResult(Authenticate(password));
+        return Task.FromResult(this.Authenticate(password));
     }
 
     /// <summary>
@@ -26,13 +26,13 @@ public class LoginService
     /// </summary>
     private (bool Success, string Message) Authenticate(string password)
     {
-        if (string.IsNullOrWhiteSpace(password))
+        if (String.IsNullOrWhiteSpace(password))
         {
             return (false, "パスワードを入力してください");
         }
 
         // Plain text password comparison - intentional design decision
-        if (password != _authOptions.Password)
+        if (password != this._authOptions.Password)
         {
             return (false, "パスワードが正しくありません");
         }

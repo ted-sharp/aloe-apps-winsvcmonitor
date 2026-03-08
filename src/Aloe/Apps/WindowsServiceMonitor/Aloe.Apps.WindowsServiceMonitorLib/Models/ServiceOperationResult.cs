@@ -3,7 +3,7 @@ namespace Aloe.Apps.WindowsServiceMonitorLib.Models;
 public class ServiceOperationResult
 {
     public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
+    public string Message { get; set; } = String.Empty;
     public ServiceInfo? ServiceInfo { get; set; }
 
     public static ServiceOperationResult SuccessResult(string message, ServiceInfo? info = null)

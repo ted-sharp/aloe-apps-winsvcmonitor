@@ -15,18 +15,18 @@ public class WindowsServiceMonitorHttpClient : IDisposable
 
     public WindowsServiceMonitorHttpClient(WindowsServiceMonitorClientOptions options)
     {
-        _options = options;
-        _cookieContainer = new CookieContainer();
+        this._options = options;
+        this._cookieContainer = new CookieContainer();
 
         var handler = new HttpClientHandler
         {
-            CookieContainer = _cookieContainer,
+            CookieContainer = this._cookieContainer,
             UseCookies = true
         };
 
-        _httpClient = new HttpClient(handler)
+        this._httpClient = new HttpClient(handler)
         {
-            BaseAddress = new Uri(_options.ServerUrl)
+            BaseAddress = new Uri(this._options.ServerUrl)
         };
     }
 
@@ -34,7 +34,7 @@ public class WindowsServiceMonitorHttpClient : IDisposable
     {
         try
         {
-            var response = await _httpClient.GetAsync("/api/services");
+            var response = await this._httpClient.GetAsync("/api/services");
 
             if (!response.IsSuccessStatusCode)
                 return null;
@@ -50,6 +50,6 @@ public class WindowsServiceMonitorHttpClient : IDisposable
 
     public void Dispose()
     {
-        _httpClient.Dispose();
+        this._httpClient.Dispose();
     }
 }

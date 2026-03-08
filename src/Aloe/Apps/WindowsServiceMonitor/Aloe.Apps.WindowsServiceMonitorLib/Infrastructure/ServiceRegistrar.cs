@@ -10,7 +10,7 @@ public class ServiceRegistrar : IServiceRegistrar
 
     public ServiceRegistrar(ILogger<ServiceRegistrar> logger)
     {
-        _logger = logger;
+        this._logger = logger;
     }
 
     public async Task<ServiceOperationResult> RegisterServiceAsync(ServiceRegistrationRequest request)
@@ -18,51 +18,51 @@ public class ServiceRegistrar : IServiceRegistrar
         try
         {
             var binaryPath = ResolveBinaryPath(request.BinaryPath, request.BinaryPathAlt);
-            ValidateRequest(request, binaryPath);
+            this.ValidateRequest(request, binaryPath);
 
             var scCreateCommand = $"create \"{request.ServiceName}\" binPath= \"{binaryPath}\"";
 
-            if (!string.IsNullOrEmpty(request.DisplayName))
+            if (!String.IsNullOrEmpty(request.DisplayName))
             {
                 scCreateCommand += $" DisplayName= \"{request.DisplayName}\"";
             }
 
             // Add account and password if specified
-            if (!string.IsNullOrEmpty(request.Account))
+            if (!String.IsNullOrEmpty(request.Account))
             {
                 scCreateCommand += $" obj= \"{request.Account}\"";
 
                 // Add password if account is specified and password is not empty
-                if (!string.IsNullOrEmpty(request.Password))
+                if (!String.IsNullOrEmpty(request.Password))
                 {
                     scCreateCommand += $" password= \"{request.Password}\"";
                 }
             }
 
-            var result = await ExecuteScCommand(scCreateCommand);
+            var result = await this.ExecuteScCommand(scCreateCommand);
 
             if (!result.Success)
             {
                 return ServiceOperationResult.FailureResult($"サービス登録に失敗しました: {result.Message}");
             }
 
-            if (!string.IsNullOrEmpty(request.StartupType))
+            if (!String.IsNullOrEmpty(request.StartupType))
             {
-                var scConfigCommand = $"config \"{request.ServiceName}\" start= {GetStartupTypeValue(request.StartupType)}";
-                var configResult = await ExecuteScCommand(scConfigCommand);
+                var scConfigCommand = $"config \"{request.ServiceName}\" start= {this.GetStartupTypeValue(request.StartupType)}";
+                var configResult = await this.ExecuteScCommand(scConfigCommand);
 
                 if (!configResult.Success)
                 {
-                    _logger.LogWarning("起動タイプの設定に失敗しました。サービス自体は登録されました。");
+                    this._logger.LogWarning("起動タイプの設定に失敗しました。サービス自体は登録されました。");
                 }
             }
 
-            _logger.LogInformation("サービス '{ServiceName}' が登録されました", request.ServiceName);
+            this._logger.LogInformation("サービス '{ServiceName}' が登録されました", request.ServiceName);
             return ServiceOperationResult.SuccessResult($"サービス '{request.ServiceName}' を登録しました");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "サービス登録中にエラーが発生しました");
+            this._logger.LogError(ex, "サービス登録中にエラーが発生しました");
             return ServiceOperationResult.FailureResult($"エラーが発生しました: {ex.Message}");
         }
     }
@@ -71,7 +71,7 @@ public class ServiceRegistrar : IServiceRegistrar
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(serviceName))
+            if (String.IsNullOrWhiteSpace(serviceName))
             {
                 return ServiceOperationResult.FailureResult("サービス名は空にできません");
             }
@@ -81,19 +81,19 @@ public class ServiceRegistrar : IServiceRegistrar
                 return ServiceOperationResult.FailureResult("無効なサービス名です");
             }
 
-            var result = await ExecuteScCommand($"delete \"{serviceName}\"");
+            var result = await this.ExecuteScCommand($"delete \"{serviceName}\"");
 
             if (!result.Success)
             {
                 return ServiceOperationResult.FailureResult($"サービス削除に失敗しました: {result.Message}");
             }
 
-            _logger.LogInformation("サービス '{ServiceName}' が削除されました", serviceName);
+            this._logger.LogInformation("サービス '{ServiceName}' が削除されました", serviceName);
             return ServiceOperationResult.SuccessResult($"サービス '{serviceName}' を削除しました");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "サービス削除中にエラーが発生しました");
+            this._logger.LogError(ex, "サービス削除中にエラーが発生しました");
             return ServiceOperationResult.FailureResult($"エラーが発生しました: {ex.Message}");
         }
     }
@@ -101,14 +101,14 @@ public class ServiceRegistrar : IServiceRegistrar
     internal static string ResolveBinaryPath(string binaryPath, string? binaryPathAlt)
     {
         var primary = ResolveSinglePath(binaryPath);
-        if (!string.IsNullOrEmpty(primary) && File.Exists(primary))
+        if (!String.IsNullOrEmpty(primary) && File.Exists(primary))
             return primary;
-        if (!string.IsNullOrWhiteSpace(binaryPathAlt))
+        if (!String.IsNullOrWhiteSpace(binaryPathAlt))
         {
             var alt = ResolveSinglePath(binaryPathAlt);
             if (File.Exists(alt))
                 return alt;
-            if (string.IsNullOrEmpty(primary))
+            if (String.IsNullOrEmpty(primary))
                 return alt; // バリデーションエラー用に解決済みパスを返す
         }
         return primary;
@@ -116,7 +116,7 @@ public class ServiceRegistrar : IServiceRegistrar
 
     private static string ResolveSinglePath(string path)
     {
-        if (string.IsNullOrWhiteSpace(path))
+        if (String.IsNullOrWhiteSpace(path))
             return path;
         if (Path.IsPathRooted(path))
             return Path.GetFullPath(path);
@@ -125,7 +125,7 @@ public class ServiceRegistrar : IServiceRegistrar
 
     private void ValidateRequest(ServiceRegistrationRequest request, string resolvedBinaryPath)
     {
-        if (string.IsNullOrWhiteSpace(request.ServiceName))
+        if (String.IsNullOrWhiteSpace(request.ServiceName))
         {
             throw new ArgumentException("サービス名は空にできません", nameof(request.ServiceName));
         }
@@ -135,7 +135,7 @@ public class ServiceRegistrar : IServiceRegistrar
             throw new ArgumentException("サービス名に無効な文字が含まれています", nameof(request.ServiceName));
         }
 
-        if (string.IsNullOrWhiteSpace(request.BinaryPath) && string.IsNullOrWhiteSpace(request.BinaryPathAlt))
+        if (String.IsNullOrWhiteSpace(request.BinaryPath) && String.IsNullOrWhiteSpace(request.BinaryPathAlt))
         {
             throw new ArgumentException("バイナリパスは空にできません", nameof(request.BinaryPath));
         }
@@ -198,7 +198,7 @@ public class ServiceRegistrar : IServiceRegistrar
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "sc.exeコマンド実行エラー");
+            this._logger.LogError(ex, "sc.exeコマンド実行エラー");
             return (false, ex.Message);
         }
     }

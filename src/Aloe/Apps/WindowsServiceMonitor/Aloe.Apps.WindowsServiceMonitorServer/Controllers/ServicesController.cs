@@ -13,22 +13,22 @@ public class ServicesController : ControllerBase
 
     public ServicesController(IServiceManager serviceManager)
     {
-        _serviceManager = serviceManager;
+        this._serviceManager = serviceManager;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var services = await _serviceManager.GetAllServicesAsync();
-        return Ok(services);
+        var services = await this._serviceManager.GetAllServicesAsync();
+        return this.Ok(services);
     }
 
     [HttpGet("{serviceName}")]
     public async Task<IActionResult> Get(string serviceName)
     {
-        var service = await _serviceManager.GetServiceAsync(serviceName);
+        var service = await this._serviceManager.GetServiceAsync(serviceName);
         if (service == null)
-            return NotFound();
-        return Ok(service);
+            return this.NotFound();
+        return this.Ok(service);
     }
 }

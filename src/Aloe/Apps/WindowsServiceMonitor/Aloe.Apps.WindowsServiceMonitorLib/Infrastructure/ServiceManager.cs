@@ -29,20 +29,20 @@ public partial class ServiceManager : IServiceManager
         ILogRepository logRepository,
         IOperationTracker operationTracker)
     {
-        _win32Api = win32Api;
-        _logger = logger;
-        _options = options.Value;
-        _repository = repository;
-        _registrar = registrar;
-        _logRepository = logRepository;
-        _operationTracker = operationTracker;
+        this._win32Api = win32Api;
+        this._logger = logger;
+        this._options = options.Value;
+        this._repository = repository;
+        this._registrar = registrar;
+        this._logRepository = logRepository;
+        this._operationTracker = operationTracker;
     }
 
     public async Task<List<ServiceInfo>> GetAllServicesAsync()
     {
         // Combine services from both appsettings.json and JSON repository
-        var configServices = _options.MonitoredServices;
-        var repositoryServices = await _repository.GetAllAsync();
+        var configServices = this._options.MonitoredServices;
+        var repositoryServices = await this._repository.GetAllAsync();
 
         var allServiceNames = configServices
             .Select(s => s.ServiceName)
@@ -54,7 +54,7 @@ public partial class ServiceManager : IServiceManager
 
         foreach (var serviceName in allServiceNames)
         {
-            var serviceInfo = await GetServiceByNameAsync(serviceName);
+            var serviceInfo = await this.GetServiceByNameAsync(serviceName);
             if (serviceInfo != null)
             {
                 services.Add(serviceInfo);
@@ -66,12 +66,12 @@ public partial class ServiceManager : IServiceManager
 
     public async Task<ServiceInfo?> GetServiceAsync(string serviceName)
     {
-        return await GetServiceByNameAsync(serviceName);
+        return await this.GetServiceByNameAsync(serviceName);
     }
 
     public async Task<ServiceOperationResult> StartServiceAsync(string serviceName)
     {
-        var validationResult = await ValidateMonitoredServiceAsync(serviceName);
+        var validationResult = await this.ValidateMonitoredServiceAsync(serviceName);
         if (validationResult != null) return validationResult;
 
         return await Task.Run(async () =>
@@ -89,19 +89,19 @@ public partial class ServiceManager : IServiceManager
                 }
 
                 service.Start();
-                service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(_options.ServiceOperationTimeoutSeconds));
+                service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(this._options.ServiceOperationTimeoutSeconds));
 
-                _logger.LogInformation("サービス '{ServiceName}' が起動されました", serviceName);
+                this._logger.LogInformation("サービス '{ServiceName}' が起動されました", serviceName);
 
                 // 期待される状態遷移を記録（状態変化ログの重複を防ぐため）
-                _operationTracker.RegisterExpectedTransition(serviceName, ConvertStatus(oldStatus), ServiceStatus.Running);
+                this._operationTracker.RegisterExpectedTransition(serviceName, this.ConvertStatus(oldStatus), ServiceStatus.Running);
 
                 // ログ記録（成功時）
-                await _logRepository.AddLogAsync(new LogEntry
+                await this._logRepository.AddLogAsync(new LogEntry
                 {
                     Timestamp = DateTime.Now,
                     Type = LogType.Operation,
-                    Message = $"サービス '{serviceName}' を起動しました ({ConvertStatusToJapanese(oldStatus)}→実行中)",
+                    Message = $"サービス '{serviceName}' を起動しました ({this.ConvertStatusToJapanese(oldStatus)}→実行中)",
                     ServiceName = serviceName,
                     Result = "成功"
                 });
@@ -110,14 +110,14 @@ public partial class ServiceManager : IServiceManager
             }
             catch (Exception ex)
             {
-                return await HandleServiceOperationErrorAsync(serviceName, ex, "起動");
+                return await this.HandleServiceOperationErrorAsync(serviceName, ex, "起動");
             }
         });
     }
 
     public async Task<ServiceOperationResult> StopServiceAsync(string serviceName)
     {
-        var validationResult = await ValidateMonitoredServiceAsync(serviceName);
+        var validationResult = await this.ValidateMonitoredServiceAsync(serviceName);
         if (validationResult != null) return validationResult;
 
         return await Task.Run(async () =>
@@ -135,19 +135,19 @@ public partial class ServiceManager : IServiceManager
                 }
 
                 service.Stop();
-                service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(_options.ServiceOperationTimeoutSeconds));
+                service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(this._options.ServiceOperationTimeoutSeconds));
 
-                _logger.LogInformation("サービス '{ServiceName}' が停止されました", serviceName);
+                this._logger.LogInformation("サービス '{ServiceName}' が停止されました", serviceName);
 
                 // 期待される状態遷移を記録（状態変化ログの重複を防ぐため）
-                _operationTracker.RegisterExpectedTransition(serviceName, ConvertStatus(oldStatus), ServiceStatus.Stopped);
+                this._operationTracker.RegisterExpectedTransition(serviceName, this.ConvertStatus(oldStatus), ServiceStatus.Stopped);
 
                 // ログ記録（成功時）
-                await _logRepository.AddLogAsync(new LogEntry
+                await this._logRepository.AddLogAsync(new LogEntry
                 {
                     Timestamp = DateTime.Now,
                     Type = LogType.Operation,
-                    Message = $"サービス '{serviceName}' を停止しました ({ConvertStatusToJapanese(oldStatus)}→停止)",
+                    Message = $"サービス '{serviceName}' を停止しました ({this.ConvertStatusToJapanese(oldStatus)}→停止)",
                     ServiceName = serviceName,
                     Result = "成功"
                 });
@@ -156,14 +156,14 @@ public partial class ServiceManager : IServiceManager
             }
             catch (Exception ex)
             {
-                return await HandleServiceOperationErrorAsync(serviceName, ex, "停止");
+                return await this.HandleServiceOperationErrorAsync(serviceName, ex, "停止");
             }
         });
     }
 
     public async Task<ServiceOperationResult> RestartServiceAsync(string serviceName)
     {
-        var validationResult = await ValidateMonitoredServiceAsync(serviceName);
+        var validationResult = await this.ValidateMonitoredServiceAsync(serviceName);
         if (validationResult != null) return validationResult;
 
         return await Task.Run(async () =>
@@ -178,26 +178,26 @@ public partial class ServiceManager : IServiceManager
                 if (service.Status == ServiceControllerStatus.Running)
                 {
                     service.Stop();
-                    service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(_options.ServiceOperationTimeoutSeconds));
+                    service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(this._options.ServiceOperationTimeoutSeconds));
 
                     // 期待される状態遷移を記録: Running → Stopped
-                    _operationTracker.RegisterExpectedTransition(serviceName, ConvertStatus(oldStatus), ServiceStatus.Stopped);
+                    this._operationTracker.RegisterExpectedTransition(serviceName, this.ConvertStatus(oldStatus), ServiceStatus.Stopped);
                 }
 
                 service.Start();
-                service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(_options.ServiceOperationTimeoutSeconds));
+                service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(this._options.ServiceOperationTimeoutSeconds));
 
-                _logger.LogInformation("サービス '{ServiceName}' が再起動されました", serviceName);
+                this._logger.LogInformation("サービス '{ServiceName}' が再起動されました", serviceName);
 
                 // 期待される状態遷移を記録: Stopped → Running
-                _operationTracker.RegisterExpectedTransition(serviceName, ServiceStatus.Stopped, ServiceStatus.Running);
+                this._operationTracker.RegisterExpectedTransition(serviceName, ServiceStatus.Stopped, ServiceStatus.Running);
 
                 // ログ記録（成功時）
-                await _logRepository.AddLogAsync(new LogEntry
+                await this._logRepository.AddLogAsync(new LogEntry
                 {
                     Timestamp = DateTime.Now,
                     Type = LogType.Operation,
-                    Message = $"サービス '{serviceName}' を再起動しました ({ConvertStatusToJapanese(oldStatus)}→停止→実行中)",
+                    Message = $"サービス '{serviceName}' を再起動しました ({this.ConvertStatusToJapanese(oldStatus)}→停止→実行中)",
                     ServiceName = serviceName,
                     Result = "成功"
                 });
@@ -206,7 +206,7 @@ public partial class ServiceManager : IServiceManager
             }
             catch (Exception ex)
             {
-                return await HandleServiceOperationErrorAsync(serviceName, ex, "再起動");
+                return await this.HandleServiceOperationErrorAsync(serviceName, ex, "再起動");
             }
         });
     }
@@ -220,15 +220,15 @@ public partial class ServiceManager : IServiceManager
         Exception ex,
         string operationName)
     {
-        _logger.LogError(ex, "サービス '{ServiceName}' の{OperationName}に失敗しました", serviceName, operationName);
+        this._logger.LogError(ex, "サービス '{ServiceName}' の{OperationName}に失敗しました", serviceName, operationName);
 
         // Try to get config to retrieve exe output for better error messages
-        var config = _options.MonitoredServices.FirstOrDefault(x =>
+        var config = this._options.MonitoredServices.FirstOrDefault(x =>
             x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
 
         if (config == null)
         {
-            var repoServices = await _repository.GetAllAsync();
+            var repoServices = await this._repository.GetAllAsync();
             config = repoServices.FirstOrDefault(x =>
                 x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
         }
@@ -238,8 +238,8 @@ public partial class ServiceManager : IServiceManager
         // For Win32Exception and InvalidOperationException, try to get exe output
         if (ex is System.ComponentModel.Win32Exception || ex is InvalidOperationException)
         {
-            var exeOutput = config != null ? await GetExeConsoleOutputAsync(config) : string.Empty;
-            if (!string.IsNullOrEmpty(exeOutput))
+            var exeOutput = config != null ? await this.GetExeConsoleOutputAsync(config) : String.Empty;
+            if (!String.IsNullOrEmpty(exeOutput))
             {
                 errorMessage = exeOutput;
             }
@@ -250,7 +250,7 @@ public partial class ServiceManager : IServiceManager
         }
 
         // Log the error
-        await _logRepository.AddLogAsync(new LogEntry
+        await this._logRepository.AddLogAsync(new LogEntry
         {
             Timestamp = DateTime.Now,
             Type = LogType.Operation,
@@ -266,19 +266,19 @@ public partial class ServiceManager : IServiceManager
     {
         try
         {
-            if (config == null || string.IsNullOrEmpty(config.BinaryPath))
+            if (config == null || String.IsNullOrEmpty(config.BinaryPath))
             {
-                _logger.LogWarning("Config is null or BinaryPath is empty");
-                return string.Empty;
+                this._logger.LogWarning("Config is null or BinaryPath is empty");
+                return String.Empty;
             }
 
             var binaryPath = ServiceRegistrar.ResolveBinaryPath(config.BinaryPath, config.BinaryPathAlt);
-            _logger.LogInformation("Resolved binary path: {BinaryPath}", binaryPath);
+            this._logger.LogInformation("Resolved binary path: {BinaryPath}", binaryPath);
 
             if (!File.Exists(binaryPath))
             {
-                _logger.LogWarning("Binary file not found: {BinaryPath}", binaryPath);
-                return string.Empty;
+                this._logger.LogWarning("Binary file not found: {BinaryPath}", binaryPath);
+                return String.Empty;
             }
 
             return await Task.Run(async () =>
@@ -298,8 +298,8 @@ public partial class ServiceManager : IServiceManager
                     process = System.Diagnostics.Process.Start(psi);
                     if (process == null)
                     {
-                        _logger.LogWarning("Failed to start process for {BinaryPath}", binaryPath);
-                        return string.Empty;
+                        this._logger.LogWarning("Failed to start process for {BinaryPath}", binaryPath);
+                        return String.Empty;
                     }
 
                     // タイムアウトを設定（5秒）
@@ -319,19 +319,19 @@ public partial class ServiceManager : IServiceManager
                         var output = await outputTask;
                         var error = await errorTask;
 
-                        _logger.LogInformation("Process output - Error: '{Error}', Output: '{Output}'", error, output);
+                        this._logger.LogInformation("Process output - Error: '{Error}', Output: '{Output}'", error, output);
 
-                        var result = (!string.IsNullOrEmpty(error) ? error : output).Trim();
+                        var result = (!String.IsNullOrEmpty(error) ? error : output).Trim();
                         if (result.Length > 1000)
                             result = result.Substring(0, 1000) + "...";
 
-                        _logger.LogInformation("Final result: '{Result}'", result);
+                        this._logger.LogInformation("Final result: '{Result}'", result);
                         return result;
                     }
                     catch (OperationCanceledException)
                     {
                         // タイムアウト発生時はプロセスを強制終了
-                        _logger.LogWarning("Process execution timed out for {BinaryPath}, killing process", binaryPath);
+                        this._logger.LogWarning("Process execution timed out for {BinaryPath}, killing process", binaryPath);
                         try
                         {
                             if (!process.HasExited)
@@ -342,15 +342,15 @@ public partial class ServiceManager : IServiceManager
                         }
                         catch (Exception killEx)
                         {
-                            _logger.LogWarning(killEx, "Failed to kill process");
+                            this._logger.LogWarning(killEx, "Failed to kill process");
                         }
-                        return string.Empty;
+                        return String.Empty;
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error executing process");
-                    return string.Empty;
+                    this._logger.LogError(ex, "Error executing process");
+                    return String.Empty;
                 }
                 finally
                 {
@@ -360,8 +360,8 @@ public partial class ServiceManager : IServiceManager
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in GetExeConsoleOutputAsync");
-            return string.Empty;
+            this._logger.LogError(ex, "Error in GetExeConsoleOutputAsync");
+            return String.Empty;
         }
     }
 
@@ -370,14 +370,14 @@ public partial class ServiceManager : IServiceManager
         return await Task.Run(async () =>
         {
             // 設定は例外前に取得（未登録時も一覧表示するため）
-            var configFromSettings = _options.MonitoredServices.FirstOrDefault(x =>
+            var configFromSettings = this._options.MonitoredServices.FirstOrDefault(x =>
                 x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
-            var configFromRepo = (await _repository.GetAllAsync()).FirstOrDefault(x =>
+            var configFromRepo = (await this._repository.GetAllAsync()).FirstOrDefault(x =>
                 x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
             var config = configFromSettings ?? configFromRepo;
 
             // サービスの存在を例外なしでチェック
-            if (!_win32Api.ServiceExists(serviceName))
+            if (!this._win32Api.ServiceExists(serviceName))
             {
                 // 設定にあれば未登録でも一覧に表示（登録ボタンから sc create 可能）
                 if (config != null)
@@ -390,7 +390,7 @@ public partial class ServiceManager : IServiceManager
                         Status = ServiceStatus.Unknown,
                         StartupType = "未登録",
                         ProcessId = 0,
-                        BinaryPath = config.BinaryPath ?? string.Empty,
+                        BinaryPath = config.BinaryPath ?? String.Empty,
                         BinaryPathAlt = config.BinaryPathAlt,
                         IsCritical = config.Critical
                     };
@@ -402,18 +402,18 @@ public partial class ServiceManager : IServiceManager
             {
                 using var sc = new ServiceController(serviceName);
 
-                var processId = _win32Api.GetProcessId(serviceName) ?? 0;
-                var status = ConvertStatus(sc.Status);
+                var processId = this._win32Api.GetProcessId(serviceName) ?? 0;
+                var status = this.ConvertStatus(sc.Status);
 
                 var serviceInfo = new ServiceInfo
                 {
                     ServiceName = sc.ServiceName,
                     DisplayName = sc.DisplayName,
-                    Description = config?.Description ?? string.Empty,
+                    Description = config?.Description ?? String.Empty,
                     Status = status,
                     StartupType = sc.StartType.ToString(),
                     ProcessId = processId,
-                    BinaryPath = config?.BinaryPath ?? string.Empty,
+                    BinaryPath = config?.BinaryPath ?? String.Empty,
                     BinaryPathAlt = config?.BinaryPathAlt,
                     IsCritical = config?.Critical ?? false
                 };
@@ -421,18 +421,18 @@ public partial class ServiceManager : IServiceManager
                 // Populate new extended properties
                 if (status == ServiceStatus.Running && processId > 0)
                 {
-                    serviceInfo.Uptime = await _win32Api.GetServiceUptimeAsync(serviceName);
-                    serviceInfo.MemoryUsageMB = await _win32Api.GetProcessMemoryUsageMBAsync(processId);
-                    serviceInfo.LastStatusChange = await _win32Api.GetLastStatusChangeAsync(serviceName);
+                    serviceInfo.Uptime = await this._win32Api.GetServiceUptimeAsync(serviceName);
+                    serviceInfo.MemoryUsageMB = await this._win32Api.GetProcessMemoryUsageMBAsync(processId);
+                    serviceInfo.LastStatusChange = await this._win32Api.GetLastStatusChangeAsync(serviceName);
                 }
 
-                serviceInfo.DependentServicesCount = await _win32Api.GetDependentServicesCountAsync(serviceName);
+                serviceInfo.DependentServicesCount = await this._win32Api.GetDependentServicesCountAsync(serviceName);
 
                 return serviceInfo;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "サービス '{ServiceName}' の情報取得に失敗しました", serviceName);
+                this._logger.LogWarning(ex, "サービス '{ServiceName}' の情報取得に失敗しました", serviceName);
                 // 設定にあれば未登録でも一覧に表示（登録ボタンから sc create 可能）
                 if (config != null)
                 {
@@ -444,7 +444,7 @@ public partial class ServiceManager : IServiceManager
                         Status = ServiceStatus.Unknown,
                         StartupType = "未登録",
                         ProcessId = 0,
-                        BinaryPath = config.BinaryPath ?? string.Empty,
+                        BinaryPath = config.BinaryPath ?? String.Empty,
                         BinaryPathAlt = config.BinaryPathAlt,
                         IsCritical = config.Critical
                     };
@@ -487,12 +487,12 @@ public partial class ServiceManager : IServiceManager
 
     private string ConvertStatusToJapanese(ServiceControllerStatus status)
     {
-        return ConvertStatusToJapanese(ConvertStatus(status));
+        return this.ConvertStatusToJapanese(this.ConvertStatus(status));
     }
 
     private static ServiceOperationResult? ValidateServiceName(string serviceName)
     {
-        if (string.IsNullOrWhiteSpace(serviceName))
+        if (String.IsNullOrWhiteSpace(serviceName))
             return ServiceOperationResult.FailureResult("サービス名は空にできません");
         if (!ServiceNameRegex().IsMatch(serviceName))
             return ServiceOperationResult.FailureResult("無効なサービス名です");
@@ -503,7 +503,7 @@ public partial class ServiceManager : IServiceManager
     {
         var nameValidation = ValidateServiceName(serviceName);
         if (nameValidation != null) return nameValidation;
-        if (!await IsServiceMonitoredAsync(serviceName))
+        if (!await this.IsServiceMonitoredAsync(serviceName))
             return ServiceOperationResult.FailureResult($"サービス '{serviceName}' は監視対象に登録されていません");
         return null;
     }
@@ -515,9 +515,9 @@ public partial class ServiceManager : IServiceManager
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(serviceName))
+            if (String.IsNullOrWhiteSpace(serviceName))
             {
-                _logger.LogWarning("無効なサービス名で追加操作が試みられました");
+                this._logger.LogWarning("無効なサービス名で追加操作が試みられました");
                 return false;
             }
 
@@ -530,15 +530,15 @@ public partial class ServiceManager : IServiceManager
             }
             catch
             {
-                _logger.LogWarning("サービス '{ServiceName}' がWindows上に見つかりません", serviceName);
+                this._logger.LogWarning("サービス '{ServiceName}' がWindows上に見つかりません", serviceName);
                 return false;
             }
 
             // Check if already monitored
-            var isMonitored = await IsServiceMonitoredAsync(serviceName);
+            var isMonitored = await this.IsServiceMonitoredAsync(serviceName);
             if (isMonitored)
             {
-                _logger.LogInformation("サービス '{ServiceName}' は既に監視されています", serviceName);
+                this._logger.LogInformation("サービス '{ServiceName}' は既に監視されています", serviceName);
                 return false;
             }
 
@@ -550,13 +550,13 @@ public partial class ServiceManager : IServiceManager
                 Critical = critical
             };
 
-            await _repository.AddAsync(config);
-            _logger.LogInformation("サービス '{ServiceName}' を監視リストに追加しました", serviceName);
+            await this._repository.AddAsync(config);
+            this._logger.LogInformation("サービス '{ServiceName}' を監視リストに追加しました", serviceName);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "サービス '{ServiceName}' の監視追加に失敗しました", serviceName);
+            this._logger.LogError(ex, "サービス '{ServiceName}' の監視追加に失敗しました", serviceName);
             return false;
         }
     }
@@ -568,26 +568,26 @@ public partial class ServiceManager : IServiceManager
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(serviceName))
+            if (String.IsNullOrWhiteSpace(serviceName))
             {
-                _logger.LogWarning("無効なサービス名で削除操作が試みられました");
+                this._logger.LogWarning("無効なサービス名で削除操作が試みられました");
                 return false;
             }
 
-            var isMonitored = await IsServiceMonitoredAsync(serviceName);
+            var isMonitored = await this.IsServiceMonitoredAsync(serviceName);
             if (!isMonitored)
             {
-                _logger.LogWarning("サービス '{ServiceName}' は監視リストに存在しません", serviceName);
+                this._logger.LogWarning("サービス '{ServiceName}' は監視リストに存在しません", serviceName);
                 return false;
             }
 
-            await _repository.RemoveAsync(serviceName);
-            _logger.LogInformation("サービス '{ServiceName}' を監視リストから削除しました", serviceName);
+            await this._repository.RemoveAsync(serviceName);
+            this._logger.LogInformation("サービス '{ServiceName}' を監視リストから削除しました", serviceName);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "サービス '{ServiceName}' の監視削除に失敗しました", serviceName);
+            this._logger.LogError(ex, "サービス '{ServiceName}' の監視削除に失敗しました", serviceName);
             return false;
         }
     }
@@ -604,41 +604,41 @@ public partial class ServiceManager : IServiceManager
             try
             {
                 var allControllers = ServiceController.GetServices();
-                var repositoryServices = await _repository.GetAllAsync();
+                var repositoryServices = await this._repository.GetAllAsync();
 
                 foreach (var sc in allControllers)
                 {
-                    var config = _options.MonitoredServices.FirstOrDefault(x =>
+                    var config = this._options.MonitoredServices.FirstOrDefault(x =>
                         x.ServiceName.Equals(sc.ServiceName, StringComparison.OrdinalIgnoreCase));
                     var repoConfig = repositoryServices.FirstOrDefault(x =>
                         x.ServiceName.Equals(sc.ServiceName, StringComparison.OrdinalIgnoreCase));
 
                     try
                     {
-                        var processId = _win32Api.GetProcessId(sc.ServiceName) ?? 0;
-                        var status = ConvertStatus(sc.Status);
+                        var processId = this._win32Api.GetProcessId(sc.ServiceName) ?? 0;
+                        var status = this.ConvertStatus(sc.Status);
 
                         services.Add(new ServiceInfo
                         {
                             ServiceName = sc.ServiceName,
                             DisplayName = sc.DisplayName,
-                            Description = config?.Description ?? repoConfig?.Description ?? string.Empty,
+                            Description = config?.Description ?? repoConfig?.Description ?? String.Empty,
                             Status = status,
                             StartupType = sc.StartType.ToString(),
                             ProcessId = processId,
                             IsCritical = config?.Critical ?? repoConfig?.Critical ?? false,
-                            DependentServicesCount = await _win32Api.GetDependentServicesCountAsync(sc.ServiceName)
+                            DependentServicesCount = await this._win32Api.GetDependentServicesCountAsync(sc.ServiceName)
                         });
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "サービス '{ServiceName}' の情報取得に失敗しました", sc.ServiceName);
+                        this._logger.LogWarning(ex, "サービス '{ServiceName}' の情報取得に失敗しました", sc.ServiceName);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "インストール済みサービス一覧の取得に失敗しました");
+                this._logger.LogError(ex, "インストール済みサービス一覧の取得に失敗しました");
             }
 
             return services;
@@ -652,14 +652,14 @@ public partial class ServiceManager : IServiceManager
     {
         try
         {
-            var inSettings = _options.MonitoredServices.Any(x =>
+            var inSettings = this._options.MonitoredServices.Any(x =>
                 x.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
-            var inRepository = await _repository.ExistsAsync(serviceName);
+            var inRepository = await this._repository.ExistsAsync(serviceName);
             return inSettings || inRepository;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "サービス '{ServiceName}' の監視状態確認に失敗しました", serviceName);
+            this._logger.LogWarning(ex, "サービス '{ServiceName}' の監視状態確認に失敗しました", serviceName);
             return false;
         }
     }
@@ -674,17 +674,17 @@ public partial class ServiceManager : IServiceManager
             var nameValidation = ValidateServiceName(request.ServiceName);
             if (nameValidation != null) return nameValidation;
 
-            var result = await _registrar.RegisterServiceAsync(request);
+            var result = await this._registrar.RegisterServiceAsync(request);
 
             if (result.Success)
             {
-                _logger.LogInformation("サービス '{ServiceName}' を登録しました", request.ServiceName);
+                this._logger.LogInformation("サービス '{ServiceName}' を登録しました", request.ServiceName);
 
                 // 期待される状態遷移を記録: Unknown → Stopped（登録後は停止状態）
-                _operationTracker.RegisterExpectedTransition(request.ServiceName, ServiceStatus.Unknown, ServiceStatus.Stopped);
+                this._operationTracker.RegisterExpectedTransition(request.ServiceName, ServiceStatus.Unknown, ServiceStatus.Stopped);
 
                 // ログ記録（成功時）
-                await _logRepository.AddLogAsync(new LogEntry
+                await this._logRepository.AddLogAsync(new LogEntry
                 {
                     Timestamp = DateTime.Now,
                     Type = LogType.Operation,
@@ -696,7 +696,7 @@ public partial class ServiceManager : IServiceManager
             else
             {
                 // ログ記録（失敗時）
-                await _logRepository.AddLogAsync(new LogEntry
+                await this._logRepository.AddLogAsync(new LogEntry
                 {
                     Timestamp = DateTime.Now,
                     Type = LogType.Operation,
@@ -710,10 +710,10 @@ public partial class ServiceManager : IServiceManager
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "サービス '{ServiceName}' の登録に失敗しました", request.ServiceName);
+            this._logger.LogError(ex, "サービス '{ServiceName}' の登録に失敗しました", request.ServiceName);
 
             // ログ記録（例外発生時）
-            await _logRepository.AddLogAsync(new LogEntry
+            await this._logRepository.AddLogAsync(new LogEntry
             {
                 Timestamp = DateTime.Now,
                 Type = LogType.Operation,
@@ -753,29 +753,29 @@ public partial class ServiceManager : IServiceManager
                 if (sc.Status == ServiceControllerStatus.Running)
                 {
                     sc.Stop();
-                    sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(_options.ServiceOperationTimeoutSeconds));
-                    _logger.LogInformation("サービス '{ServiceName}' を停止しました", serviceName);
+                    sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(this._options.ServiceOperationTimeoutSeconds));
+                    this._logger.LogInformation("サービス '{ServiceName}' を停止しました", serviceName);
                     wasStopped = true;
 
                     // 期待される状態遷移を記録: Running → Stopped
                     if (oldStatus.HasValue)
                     {
-                        _operationTracker.RegisterExpectedTransition(serviceName, ConvertStatus(oldStatus.Value), ServiceStatus.Stopped);
+                        this._operationTracker.RegisterExpectedTransition(serviceName, this.ConvertStatus(oldStatus.Value), ServiceStatus.Stopped);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "サービス '{ServiceName}' の停止に失敗しました（続行）", serviceName);
+                this._logger.LogWarning(ex, "サービス '{ServiceName}' の停止に失敗しました（続行）", serviceName);
                 // Continue with deletion even if stop fails
             }
 
             // Unregister the service using sc delete
-            var unregisterResult = await _registrar.UnregisterServiceAsync(serviceName);
+            var unregisterResult = await this._registrar.UnregisterServiceAsync(serviceName);
             if (!unregisterResult.Success)
             {
                 // ログ記録（失敗）
-                await _logRepository.AddLogAsync(new LogEntry
+                await this._logRepository.AddLogAsync(new LogEntry
                 {
                     Timestamp = DateTime.Now,
                     Type = LogType.Operation,
@@ -787,20 +787,20 @@ public partial class ServiceManager : IServiceManager
                 return unregisterResult;
             }
 
-            _logger.LogInformation("サービス '{ServiceName}' を Windows から解除しました", serviceName);
+            this._logger.LogInformation("サービス '{ServiceName}' を Windows から解除しました", serviceName);
 
             // 期待される状態遷移を記録: Stopped → Unknown
-            _operationTracker.RegisterExpectedTransition(serviceName, ServiceStatus.Stopped, ServiceStatus.Unknown);
+            this._operationTracker.RegisterExpectedTransition(serviceName, ServiceStatus.Stopped, ServiceStatus.Unknown);
 
             // ログ記録（成功時）- 停止操作を実行した場合のみ「→停止」を含める
             string statusChange = "";
             if (oldStatus.HasValue)
             {
                 statusChange = wasStopped
-                    ? $" ({ConvertStatusToJapanese(oldStatus.Value)}→停止→不明)"
-                    : $" ({ConvertStatusToJapanese(oldStatus.Value)}→不明)";
+                    ? $" ({this.ConvertStatusToJapanese(oldStatus.Value)}→停止→不明)"
+                    : $" ({this.ConvertStatusToJapanese(oldStatus.Value)}→不明)";
             }
-            await _logRepository.AddLogAsync(new LogEntry
+            await this._logRepository.AddLogAsync(new LogEntry
             {
                 Timestamp = DateTime.Now,
                 Type = LogType.Operation,
@@ -813,7 +813,7 @@ public partial class ServiceManager : IServiceManager
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "サービス '{ServiceName}' の削除に失敗しました", serviceName);
+            this._logger.LogError(ex, "サービス '{ServiceName}' の削除に失敗しました", serviceName);
             return ServiceOperationResult.FailureResult($"削除に失敗しました: {ex.Message}");
         }
     }
@@ -825,11 +825,11 @@ public partial class ServiceManager : IServiceManager
     {
         try
         {
-            return await _repository.GetServiceDefaultsAsync();
+            return await this._repository.GetServiceDefaultsAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "サービスのデフォルト設定取得に失敗しました");
+            this._logger.LogError(ex, "サービスのデフォルト設定取得に失敗しました");
             return new ServiceDefaults();
         }
     }

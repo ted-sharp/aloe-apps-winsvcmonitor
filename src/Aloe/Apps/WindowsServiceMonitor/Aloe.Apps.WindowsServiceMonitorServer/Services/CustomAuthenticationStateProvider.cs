@@ -9,12 +9,12 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
     public CustomAuthenticationStateProvider(IHttpContextAccessor httpContextAccessor)
     {
-        _httpContext = httpContextAccessor.HttpContext;
+        this._httpContext = httpContextAccessor.HttpContext;
     }
 
     public override Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        var user = _httpContext?.User ?? new ClaimsPrincipal(new ClaimsIdentity());
+        var user = this._httpContext?.User ?? new ClaimsPrincipal(new ClaimsIdentity());
         return Task.FromResult(new AuthenticationState(user));
     }
 }

@@ -4,7 +4,7 @@ public class AuthOptions
 {
     public const string SectionName = "Authentication";
 
-    public string Password { get; set; } = string.Empty;
+    public string Password { get; set; } = String.Empty;
     public CookieSettings CookieSettings { get; set; } = new();
 }
 

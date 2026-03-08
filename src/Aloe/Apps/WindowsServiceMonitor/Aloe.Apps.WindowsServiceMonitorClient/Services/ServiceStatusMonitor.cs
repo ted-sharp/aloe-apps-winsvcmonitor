@@ -16,13 +16,13 @@ public class ServiceStatusMonitor : IAsyncDisposable
 
     public ServiceStatusMonitor(WindowsServiceMonitorClientOptions options)
     {
-        _options = options;
+        this._options = options;
     }
 
     public async Task StartAsync()
     {
-        _hubConnection = new HubConnectionBuilder()
-            .WithUrl($"{_options.ServerUrl}/windowsservicemonitorhub", options =>
+        this._hubConnection = new HubConnectionBuilder()
+            .WithUrl($"{this._options.ServerUrl}/windowsservicemonitorhub", options =>
             {
                 options.HttpMessageHandlerFactory = (handler) =>
                 {
@@ -37,16 +37,16 @@ public class ServiceStatusMonitor : IAsyncDisposable
             .WithAutomaticReconnect()
             .Build();
 
-        _hubConnection.On<ServiceInfo>("ServiceStatusUpdated", (service) =>
+        this._hubConnection.On<ServiceInfo>("ServiceStatusUpdated", (service) =>
         {
             ServiceStatusUpdated?.Invoke(this, service);
         });
 
-        _hubConnection.Reconnected += async (connectionId) =>
+        this._hubConnection.Reconnected += async (connectionId) =>
         {
             try
             {
-                await _hubConnection.InvokeAsync("SubscribeToServiceUpdates");
+                await this._hubConnection.InvokeAsync("SubscribeToServiceUpdates");
             }
             catch (Exception)
             {
@@ -56,8 +56,8 @@ public class ServiceStatusMonitor : IAsyncDisposable
 
         try
         {
-            await _hubConnection.StartAsync();
-            await _hubConnection.InvokeAsync("SubscribeToServiceUpdates");
+            await this._hubConnection.StartAsync();
+            await this._hubConnection.InvokeAsync("SubscribeToServiceUpdates");
         }
         catch (Exception ex)
         {
@@ -68,12 +68,12 @@ public class ServiceStatusMonitor : IAsyncDisposable
 
     public async Task StopAsync()
     {
-        if (_hubConnection != null)
+        if (this._hubConnection != null)
         {
             try
             {
-                await _hubConnection.InvokeAsync("UnsubscribeFromServiceUpdates");
-                await _hubConnection.StopAsync();
+                await this._hubConnection.InvokeAsync("UnsubscribeFromServiceUpdates");
+                await this._hubConnection.StopAsync();
             }
             catch (Exception)
             {
@@ -84,19 +84,19 @@ public class ServiceStatusMonitor : IAsyncDisposable
 
     public void UpdateCriticalServicesStatus(bool hasCriticalDown)
     {
-        if (_hasCriticalServicesDown != hasCriticalDown)
+        if (this._hasCriticalServicesDown != hasCriticalDown)
         {
-            _hasCriticalServicesDown = hasCriticalDown;
+            this._hasCriticalServicesDown = hasCriticalDown;
             CriticalServicesStatusChanged?.Invoke(this, hasCriticalDown);
         }
     }
 
     public async ValueTask DisposeAsync()
     {
-        await StopAsync();
-        if (_hubConnection != null)
+        await this.StopAsync();
+        if (this._hubConnection != null)
         {
-            await _hubConnection.DisposeAsync();
+            await this._hubConnection.DisposeAsync();
         }
     }
 }

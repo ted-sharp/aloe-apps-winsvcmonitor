@@ -13,5 +13,5 @@ public class ServiceDefaults
     /// <summary>
     /// Default password for the service account. Empty for built-in accounts.
     /// </summary>
-    public string Password { get; set; } = string.Empty;
+    public string Password { get; set; } = String.Empty;
 }

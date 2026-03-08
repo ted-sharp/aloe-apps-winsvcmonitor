@@ -22,27 +22,27 @@ public class BackgroundWindowsServiceMonitor : BackgroundService
         IOptions<WindowsServiceMonitorOptions> options,
         IOperationTracker operationTracker)
     {
-        _hubContext = hubContext;
-        _serviceScopeFactory = serviceScopeFactory;
-        _logger = logger;
-        _options = options.Value;
-        _operationTracker = operationTracker;
+        this._hubContext = hubContext;
+        this._serviceScopeFactory = serviceScopeFactory;
+        this._logger = logger;
+        this._options = options.Value;
+        this._operationTracker = operationTracker;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("BackgroundWindowsServiceMonitor が開始されました");
+        this._logger.LogInformation("BackgroundWindowsServiceMonitor が開始されました");
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                if (_options.EnableAutoRefresh)
+                if (this._options.EnableAutoRefresh)
                 {
-                    await MonitorServices(stoppingToken);
+                    await this.MonitorServices(stoppingToken);
                 }
 
-                await Task.Delay(_options.PollingIntervalSeconds * 1000, stoppingToken);
+                await Task.Delay(this._options.PollingIntervalSeconds * 1000, stoppingToken);
             }
             catch (OperationCanceledException)
             {
@@ -50,18 +50,18 @@ public class BackgroundWindowsServiceMonitor : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "BackgroundWindowsServiceMonitor でエラーが発生しました");
+                this._logger.LogError(ex, "BackgroundWindowsServiceMonitor でエラーが発生しました");
             }
         }
 
-        _logger.LogInformation("BackgroundWindowsServiceMonitor が停止されました");
+        this._logger.LogInformation("BackgroundWindowsServiceMonitor が停止されました");
     }
 
     private async Task MonitorServices(CancellationToken stoppingToken)
     {
         try
         {
-            using var scope = _serviceScopeFactory.CreateScope();
+            using var scope = this._serviceScopeFactory.CreateScope();
             var serviceManager = scope.ServiceProvider.GetRequiredService<IServiceManager>();
 
             var services = await serviceManager.GetAllServicesAsync();
@@ -72,17 +72,17 @@ public class BackgroundWindowsServiceMonitor : BackgroundService
                     break;
 
                 // 操作によるステータス変更があれば、前の状態を更新して誤検知を防ぐ
-                var targetStatus = _operationTracker.ConsumeTargetStatus(service.ServiceName);
+                var targetStatus = this._operationTracker.ConsumeTargetStatus(service.ServiceName);
                 if (targetStatus.HasValue)
                 {
-                    _previousStatuses[service.ServiceName] = targetStatus.Value;
+                    this._previousStatuses[service.ServiceName] = targetStatus.Value;
                 }
 
-                if (_previousStatuses.TryGetValue(service.ServiceName, out var previousStatus))
+                if (this._previousStatuses.TryGetValue(service.ServiceName, out var previousStatus))
                 {
                     if (previousStatus != service.Status)
                     {
-                        _logger.LogInformation(
+                        this._logger.LogInformation(
                             "サービス '{ServiceName}' の状態が変更されました: {OldStatus} -> {NewStatus}",
                             service.ServiceName, previousStatus, service.Status);
 
@@ -98,17 +98,17 @@ public class BackgroundWindowsServiceMonitor : BackgroundService
                             NewStatus = service.Status.ToString()
                         });
 
-                        await _hubContext.Clients.Group("ServiceMonitors")
+                        await this._hubContext.Clients.Group("ServiceMonitors")
                             .SendAsync("ServiceStatusUpdated", service, cancellationToken: stoppingToken);
                     }
                 }
 
-                _previousStatuses[service.ServiceName] = service.Status;
+                this._previousStatuses[service.ServiceName] = service.Status;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "サービス監視中にエラーが発生しました");
+            this._logger.LogError(ex, "サービス監視中にエラーが発生しました");
         }
     }
 }

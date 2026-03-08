@@ -13,48 +13,48 @@ public class WindowsServiceMonitorHub : Hub
 
     public WindowsServiceMonitorHub(IServiceManager serviceManager, ILogger<WindowsServiceMonitorHub> logger)
     {
-        _serviceManager = serviceManager;
-        _logger = logger;
+        this._serviceManager = serviceManager;
+        this._logger = logger;
     }
 
     public async Task SubscribeToServiceUpdates()
     {
-        _logger.LogInformation("クライアント {ConnectionId} がサービス更新を購読しました", Context.ConnectionId);
-        await Groups.AddToGroupAsync(Context.ConnectionId, "ServiceMonitors");
+        this._logger.LogInformation("クライアント {ConnectionId} がサービス更新を購読しました", this.Context.ConnectionId);
+        await this.Groups.AddToGroupAsync(this.Context.ConnectionId, "ServiceMonitors");
     }
 
     public async Task UnsubscribeFromServiceUpdates()
     {
-        _logger.LogInformation("クライアント {ConnectionId} がサービス更新の購読を解除しました", Context.ConnectionId);
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, "ServiceMonitors");
+        this._logger.LogInformation("クライアント {ConnectionId} がサービス更新の購読を解除しました", this.Context.ConnectionId);
+        await this.Groups.RemoveFromGroupAsync(this.Context.ConnectionId, "ServiceMonitors");
     }
 
     public async Task GetServiceStatus(string serviceName)
     {
         try
         {
-            var service = await _serviceManager.GetServiceAsync(serviceName);
+            var service = await this._serviceManager.GetServiceAsync(serviceName);
             if (service != null)
             {
-                await Clients.Caller.SendAsync("ServiceStatusUpdated", service);
+                await this.Clients.Caller.SendAsync("ServiceStatusUpdated", service);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "サービス状態の取得に失敗しました");
-            await Clients.Caller.SendAsync("Error", $"エラー: {ex.Message}");
+            this._logger.LogError(ex, "サービス状態の取得に失敗しました");
+            await this.Clients.Caller.SendAsync("Error", $"エラー: {ex.Message}");
         }
     }
 
     public override async Task OnConnectedAsync()
     {
-        _logger.LogInformation("クライアント {ConnectionId} が接続しました", Context.ConnectionId);
+        this._logger.LogInformation("クライアント {ConnectionId} が接続しました", this.Context.ConnectionId);
         await base.OnConnectedAsync();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        _logger.LogInformation("クライアント {ConnectionId} が切断されました", Context.ConnectionId);
+        this._logger.LogInformation("クライアント {ConnectionId} が切断されました", this.Context.ConnectionId);
         await base.OnDisconnectedAsync(exception);
     }
 }

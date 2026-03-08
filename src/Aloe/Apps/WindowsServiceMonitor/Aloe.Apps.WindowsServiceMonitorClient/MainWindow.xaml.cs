@@ -19,7 +19,7 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
-        InitializeComponent();
+        this.InitializeComponent();
 
         // 設定読み込み
         var configuration = new ConfigurationBuilder()
@@ -27,35 +27,35 @@ public partial class MainWindow : Window
             .AddJsonFile("appsettings.json", optional: false)
             .Build();
 
-        _options = configuration.GetSection("WindowsServiceMonitor").Get<WindowsServiceMonitorClientOptions>()
+        this._options = configuration.GetSection("WindowsServiceMonitor").Get<WindowsServiceMonitorClientOptions>()
             ?? new WindowsServiceMonitorClientOptions();
 
         // トレイアイコン初期化
-        _trayIconManager = new TrayIconManager();
-        _trayIconManager.ShowWindowRequested += TrayIcon_ShowWindowRequested;
-        _trayIconManager.OpenServicesRequested += TrayIcon_OpenServicesRequested;
-        _trayIconManager.ExitRequested += TrayIcon_ExitRequested;
+        this._trayIconManager = new TrayIconManager();
+        this._trayIconManager.ShowWindowRequested += this.TrayIcon_ShowWindowRequested;
+        this._trayIconManager.OpenServicesRequested += this.TrayIcon_OpenServicesRequested;
+        this._trayIconManager.ExitRequested += this.TrayIcon_ExitRequested;
 
         // SignalR監視開始
-        _statusMonitor = new ServiceStatusMonitor(_options);
-        _statusMonitor.ServiceStatusUpdated += StatusMonitor_ServiceStatusUpdated;
-        _statusMonitor.CriticalServicesStatusChanged += StatusMonitor_CriticalServicesStatusChanged;
-        _ = _statusMonitor.StartAsync();
+        this._statusMonitor = new ServiceStatusMonitor(this._options);
+        this._statusMonitor.ServiceStatusUpdated += this.StatusMonitor_ServiceStatusUpdated;
+        this._statusMonitor.CriticalServicesStatusChanged += this.StatusMonitor_CriticalServicesStatusChanged;
+        _ = this._statusMonitor.StartAsync();
 
         // ポーリングタイマー
-        _pollingTimer = new System.Threading.Timer(
-            PollCriticalServices,
+        this._pollingTimer = new System.Threading.Timer(
+            this.PollCriticalServices,
             null,
-            TimeSpan.FromSeconds(_options.TrayIconUpdateIntervalSeconds),
-            TimeSpan.FromSeconds(_options.TrayIconUpdateIntervalSeconds)
+            TimeSpan.FromSeconds(this._options.TrayIconUpdateIntervalSeconds),
+            TimeSpan.FromSeconds(this._options.TrayIconUpdateIntervalSeconds)
         );
 
-        InitializeWebView2();
+        this.InitializeWebView2();
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        Title = $"サービス監視 - {_options.ServerUrl}";
+        this.Title = $"サービス監視 - {this._options.ServerUrl}";
     }
 
     private async void InitializeWebView2()
@@ -70,9 +70,9 @@ public partial class MainWindow : Window
             var environment = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(
                 userDataFolder: userDataFolder);
 
-            await webView.EnsureCoreWebView2Async(environment);
-            webView.CoreWebView2.Navigate($"{_options.ServerUrl}/");
-            webView.NavigationCompleted += WebView_NavigationCompleted;
+            await this.webView.EnsureCoreWebView2Async(environment);
+            this.webView.CoreWebView2.Navigate($"{this._options.ServerUrl}/");
+            this.webView.NavigationCompleted += this.WebView_NavigationCompleted;
         }
         catch (Exception ex)
         {
@@ -94,21 +94,21 @@ public partial class MainWindow : Window
     {
         try
         {
-            using var httpClient = new WindowsServiceMonitorHttpClient(_options);
+            using var httpClient = new WindowsServiceMonitorHttpClient(this._options);
             var services = await httpClient.GetServicesAsync();
 
             if (services != null)
             {
-                lock (_serviceStatuses)
+                lock (this._serviceStatuses)
                 {
-                    _serviceStatuses.Clear();
+                    this._serviceStatuses.Clear();
                     foreach (var service in services)
                     {
-                        _serviceStatuses[service.ServiceName] = service;
+                        this._serviceStatuses[service.ServiceName] = service;
                     }
                 }
 
-                UpdateCriticalServicesStatus();
+                this.UpdateCriticalServicesStatus();
             }
         }
         catch (Exception)
@@ -119,77 +119,77 @@ public partial class MainWindow : Window
 
     private void StatusMonitor_ServiceStatusUpdated(object? sender, WindowsServiceMonitorLib.Models.ServiceInfo service)
     {
-        lock (_serviceStatuses)
+        lock (this._serviceStatuses)
         {
-            _serviceStatuses[service.ServiceName] = service;
+            this._serviceStatuses[service.ServiceName] = service;
         }
 
-        UpdateCriticalServicesStatus();
+        this.UpdateCriticalServicesStatus();
     }
 
     private void UpdateCriticalServicesStatus()
     {
         bool hasCriticalDown;
-        lock (_serviceStatuses)
+        lock (this._serviceStatuses)
         {
-            hasCriticalDown = _serviceStatuses.Values.Any(s =>
+            hasCriticalDown = this._serviceStatuses.Values.Any(s =>
                 s.IsCritical && s.Status != WindowsServiceMonitorLib.Models.ServiceStatus.Running);
         }
 
-        _statusMonitor.UpdateCriticalServicesStatus(hasCriticalDown);
+        this._statusMonitor.UpdateCriticalServicesStatus(hasCriticalDown);
     }
 
     private void StatusMonitor_CriticalServicesStatusChanged(object? sender, bool hasCriticalDown)
     {
-        Dispatcher.Invoke(() =>
+        this.Dispatcher.Invoke(() =>
         {
             if (hasCriticalDown)
-                _trayIconManager.SetStatusRed();
+                this._trayIconManager.SetStatusRed();
             else
-                _trayIconManager.SetStatusGreen();
+                this._trayIconManager.SetStatusGreen();
         });
     }
 
     private void TrayIcon_ShowWindowRequested(object? sender, EventArgs e)
     {
-        Dispatcher.Invoke(() =>
+        this.Dispatcher.Invoke(() =>
         {
-            if (IsVisible)
+            if (this.IsVisible)
             {
-                Hide();
+                this.Hide();
             }
             else
             {
-                Show();
-                WindowState = WindowState.Normal;
-                Activate();
+                this.Show();
+                this.WindowState = WindowState.Normal;
+                this.Activate();
 
                 // ウィンドウを再表示したときに明示的にリフレッシュ
-                webView?.CoreWebView2?.Reload();
+                this.webView?.CoreWebView2?.Reload();
             }
         });
     }
 
     private void TrayIcon_OpenServicesRequested(object? sender, EventArgs e)
     {
-        OpenServicesManagement();
+        this.OpenServicesManagement();
     }
 
     private void TrayIcon_ExitRequested(object? sender, EventArgs e)
     {
-        _isClosing = true;
-        Close();
+        this._isClosing = true;
+        this.Close();
     }
 
     private void MenuOpenServices_Click(object sender, RoutedEventArgs e)
     {
-        OpenServicesManagement();
+        this.OpenServicesManagement();
     }
 
     private void MenuExit_Click(object sender, RoutedEventArgs e)
     {
-        _isClosing = true;
-        Close();
+        this._isClosing = true;
+        this.Close();
     }
 
     private void OpenServicesManagement()
@@ -215,27 +215,27 @@ public partial class MainWindow : Window
 
     private void Window_StateChanged(object? sender, EventArgs e)
     {
-        if (WindowState == WindowState.Minimized)
+        if (this.WindowState == WindowState.Minimized)
         {
-            Hide();
+            this.Hide();
         }
     }
 
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
-        if (!_isClosing)
+        if (!this._isClosing)
         {
             e.Cancel = true;
-            WindowState = WindowState.Minimized;
+            this.WindowState = WindowState.Minimized;
         }
         else
         {
             // WebView2のクリーンアップ（クッキーをディスクに書き込むために必要）
-            webView?.Dispose();
+            this.webView?.Dispose();
 
-            _pollingTimer?.Dispose();
-            _trayIconManager.Dispose();
-            _statusMonitor.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(3));
+            this._pollingTimer?.Dispose();
+            this._trayIconManager.Dispose();
+            this._statusMonitor.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(3));
         }
     }
 }

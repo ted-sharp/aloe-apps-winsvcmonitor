@@ -33,10 +33,10 @@ public class JsonLogRepository : ILogRepository
 
     public JsonLogRepository(string logsDirectory, ILogger<JsonLogRepository> logger, int maxLogsPerFile = 10000)
     {
-        _logsDirectory = logsDirectory;
-        _logger = logger;
-        _maxLogsPerFile = maxLogsPerFile;
-        Directory.CreateDirectory(_logsDirectory);
+        this._logsDirectory = logsDirectory;
+        this._logger = logger;
+        this._maxLogsPerFile = maxLogsPerFile;
+        Directory.CreateDirectory(this._logsDirectory);
     }
 
     /// <summary>
@@ -44,14 +44,14 @@ public class JsonLogRepository : ILogRepository
     /// </summary>
     public async Task AddLogAsync(LogEntry logEntry)
     {
-        await _semaphore.WaitAsync();
+        await this._semaphore.WaitAsync();
         try
         {
-            await AddLogDirectlyAsync(logEntry);
+            await this.AddLogDirectlyAsync(logEntry);
         }
         finally
         {
-            _semaphore.Release();
+            this._semaphore.Release();
         }
     }
 
@@ -60,7 +60,7 @@ public class JsonLogRepository : ILogRepository
     /// </summary>
     public async Task<List<LogEntry>> GetAllLogsAsync()
     {
-        return await GetLogsAsync();
+        return await this.GetLogsAsync();
     }
 
     /// <summary>
@@ -73,14 +73,14 @@ public class JsonLogRepository : ILogRepository
         int skip = 0,
         int take = 50)
     {
-        await _semaphore.WaitAsync();
+        await this._semaphore.WaitAsync();
         try
         {
-            return await GetLogsDirectlyAsync(logType, startDate, endDate, skip, take);
+            return await this.GetLogsDirectlyAsync(logType, startDate, endDate, skip, take);
         }
         finally
         {
-            _semaphore.Release();
+            this._semaphore.Release();
         }
     }
 
@@ -92,14 +92,14 @@ public class JsonLogRepository : ILogRepository
         DateTime? startDate = null,
         DateTime? endDate = null)
     {
-        await _semaphore.WaitAsync();
+        await this._semaphore.WaitAsync();
         try
         {
-            return await GetLogCountDirectlyAsync(logType, startDate, endDate);
+            return await this.GetLogCountDirectlyAsync(logType, startDate, endDate);
         }
         finally
         {
-            _semaphore.Release();
+            this._semaphore.Release();
         }
     }
 
@@ -108,14 +108,14 @@ public class JsonLogRepository : ILogRepository
     /// </summary>
     public async Task DeleteOldLogsAsync(int keepCount)
     {
-        await _semaphore.WaitAsync();
+        await this._semaphore.WaitAsync();
         try
         {
-            await DeleteOldLogsDirectlyAsync(keepCount);
+            await this.DeleteOldLogsDirectlyAsync(keepCount);
         }
         finally
         {
-            _semaphore.Release();
+            this._semaphore.Release();
         }
     }
 
@@ -130,17 +130,17 @@ public class JsonLogRepository : ILogRepository
     {
         // 今日の日付でファイル名を生成
         var fileName = GetCurrentLogFileName();
-        var filePath = Path.Combine(_logsDirectory, fileName);
+        var filePath = Path.Combine(this._logsDirectory, fileName);
 
         // 既存のLogStorageを読み込むか、新規作成
-        var storage = await ReadLogStorageDirectlyAsync(filePath) ?? new LogStorage();
+        var storage = await this.ReadLogStorageDirectlyAsync(filePath) ?? new LogStorage();
 
         // ファイルサイズ制限チェック
-        if (storage.Logs.Count >= _maxLogsPerFile)
+        if (storage.Logs.Count >= this._maxLogsPerFile)
         {
             // 連番ファイルに切り替え
-            fileName = GetNextSequencedFileName();
-            filePath = Path.Combine(_logsDirectory, fileName);
+            fileName = this.GetNextSequencedFileName();
+            filePath = Path.Combine(this._logsDirectory, fileName);
             storage = new LogStorage();
         }
 
@@ -148,7 +148,7 @@ public class JsonLogRepository : ILogRepository
         storage.Logs.Add(logEntry);
 
         // アトミックライトで保存
-        await WriteLogStorageDirectlyAsync(filePath, storage);
+        await this.WriteLogStorageDirectlyAsync(filePath, storage);
     }
 
     /// <summary>
@@ -162,13 +162,13 @@ public class JsonLogRepository : ILogRepository
         int take = 50)
     {
         // 日付範囲から対象ファイルを取得
-        var logFiles = GetLogFilesForDateRange(startDate, endDate);
+        var logFiles = this.GetLogFilesForDateRange(startDate, endDate);
 
         // すべてのログをマージ
         var allLogs = new List<LogEntry>();
         foreach (var filePath in logFiles)
         {
-            var storage = await ReadLogStorageDirectlyAsync(filePath);
+            var storage = await this.ReadLogStorageDirectlyAsync(filePath);
             if (storage != null)
             {
                 allLogs.AddRange(storage.Logs);
@@ -211,13 +211,13 @@ public class JsonLogRepository : ILogRepository
         DateTime? endDate = null)
     {
         // 日付範囲から対象ファイルを取得
-        var logFiles = GetLogFilesForDateRange(startDate, endDate);
+        var logFiles = this.GetLogFilesForDateRange(startDate, endDate);
 
         // すべてのログをマージ
         var allLogs = new List<LogEntry>();
         foreach (var filePath in logFiles)
         {
-            var storage = await ReadLogStorageDirectlyAsync(filePath);
+            var storage = await this.ReadLogStorageDirectlyAsync(filePath);
             if (storage != null)
             {
                 allLogs.AddRange(storage.Logs);
@@ -251,13 +251,13 @@ public class JsonLogRepository : ILogRepository
     /// </summary>
     private Task DeleteOldLogsDirectlyAsync(int keepDays)
     {
-        if (!Directory.Exists(_logsDirectory))
+        if (!Directory.Exists(this._logsDirectory))
         {
             return Task.CompletedTask;
         }
 
         var cutoffDate = DateTime.Now.Date.AddDays(-keepDays);
-        var logFiles = Directory.GetFiles(_logsDirectory, LogFilePattern);
+        var logFiles = Directory.GetFiles(this._logsDirectory, LogFilePattern);
 
         foreach (var filePath in logFiles)
         {
@@ -274,11 +274,11 @@ public class JsonLogRepository : ILogRepository
                         try
                         {
                             File.Delete(filePath);
-                            _logger.LogInformation("削除したログファイル: {FileName}", fileName);
+                            this._logger.LogInformation("削除したログファイル: {FileName}", fileName);
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogWarning(ex, "ログファイルの削除に失敗: {FileName}", fileName);
+                            this._logger.LogWarning(ex, "ログファイルの削除に失敗: {FileName}", fileName);
                         }
                     }
                 }
@@ -303,14 +303,14 @@ public class JsonLogRepository : ILogRepository
     {
         var todayPrefix = $"{LogFilePrefix}{DateTime.Now:yyyyMMdd}";
         var pattern = $"{todayPrefix}_*.json";
-        var existingFiles = Directory.GetFiles(_logsDirectory, pattern);
+        var existingFiles = Directory.GetFiles(this._logsDirectory, pattern);
 
         var maxSequence = 0;
         foreach (var filePath in existingFiles)
         {
             var fileName = Path.GetFileNameWithoutExtension(filePath);
             var sequenceMatch = Regex.Match(fileName, @"_(\d+)$");
-            if (sequenceMatch.Success && int.TryParse(sequenceMatch.Groups[1].Value, out var sequence))
+            if (sequenceMatch.Success && Int32.TryParse(sequenceMatch.Groups[1].Value, out var sequence))
             {
                 maxSequence = Math.Max(maxSequence, sequence);
             }
@@ -324,12 +324,12 @@ public class JsonLogRepository : ILogRepository
     /// </summary>
     private List<string> GetLogFilesForDateRange(DateTime? startDate, DateTime? endDate)
     {
-        if (!Directory.Exists(_logsDirectory))
+        if (!Directory.Exists(this._logsDirectory))
         {
             return new List<string>();
         }
 
-        var allFiles = Directory.GetFiles(_logsDirectory, LogFilePattern);
+        var allFiles = Directory.GetFiles(this._logsDirectory, LogFilePattern);
         var filteredFiles = new List<string>();
 
         foreach (var filePath in allFiles)
@@ -383,7 +383,7 @@ public class JsonLogRepository : ILogRepository
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "ログファイルの読み込みに失敗: {FilePath}", filePath);
+            this._logger.LogWarning(ex, "ログファイルの読み込みに失敗: {FilePath}", filePath);
             return null;
         }
     }
@@ -406,7 +406,7 @@ public class JsonLogRepository : ILogRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "ログファイルの書き込みに失敗: {FilePath}", filePath);
+            this._logger.LogError(ex, "ログファイルの書き込みに失敗: {FilePath}", filePath);
 
             // tempファイルのクリーンアップ
             if (File.Exists(tempFilePath))

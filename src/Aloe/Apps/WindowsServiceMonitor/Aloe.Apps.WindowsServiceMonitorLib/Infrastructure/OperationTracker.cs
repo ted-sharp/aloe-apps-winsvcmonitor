@@ -17,12 +17,12 @@ public class OperationTracker : IOperationTracker
     {
         // 同一サービスで複数の操作が連続する場合（例: stop → delete）、
         // 最後のターゲットステータスだけが重要
-        _targetStatuses[serviceName] = (toStatus, DateTime.Now);
+        this._targetStatuses[serviceName] = (toStatus, DateTime.Now);
     }
 
     public ServiceStatus? ConsumeTargetStatus(string serviceName, int withinSeconds = 30)
     {
-        if (_targetStatuses.TryRemove(serviceName, out var entry))
+        if (this._targetStatuses.TryRemove(serviceName, out var entry))
         {
             if ((DateTime.Now - entry.Timestamp).TotalSeconds <= withinSeconds)
                 return entry.Status;

@@ -41,7 +41,7 @@ public class Win32ServiceApi : IWin32ServiceApi
 
     public Win32ServiceApi(ILogger<Win32ServiceApi> logger)
     {
-        _logger = logger;
+        this._logger = logger;
     }
 
     public bool ServiceExists(string serviceName)
@@ -83,14 +83,14 @@ public class Win32ServiceApi : IWin32ServiceApi
             scManager = OpenSCManager(null, null, SC_MANAGER_CONNECT);
             if (scManager == IntPtr.Zero)
             {
-                _logger.LogWarning("SCManagerを開けませんでした");
+                this._logger.LogWarning("SCManagerを開けませんでした");
                 return null;
             }
 
             service = OpenService(scManager, serviceName, SERVICE_QUERY_STATUS);
             if (service == IntPtr.Zero)
             {
-                _logger.LogWarning("サービス '{ServiceName}' を開けませんでした", serviceName);
+                this._logger.LogWarning("サービス '{ServiceName}' を開けませんでした", serviceName);
                 return null;
             }
 
@@ -99,7 +99,7 @@ public class Win32ServiceApi : IWin32ServiceApi
 
             if (!QueryServiceStatusEx(service, SC_STATUS_PROCESS_INFO, ref serviceStatus, bufferSize, out _))
             {
-                _logger.LogWarning("サービス '{ServiceName}' の状態を取得できませんでした", serviceName);
+                this._logger.LogWarning("サービス '{ServiceName}' の状態を取得できませんでした", serviceName);
                 return null;
             }
 
@@ -107,7 +107,7 @@ public class Win32ServiceApi : IWin32ServiceApi
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "プロセスIDの取得に失敗しました");
+            this._logger.LogError(ex, "プロセスIDの取得に失敗しました");
             return null;
         }
         finally
@@ -129,7 +129,7 @@ public class Win32ServiceApi : IWin32ServiceApi
         {
             try
             {
-                var processId = GetProcessId(serviceName);
+                var processId = this.GetProcessId(serviceName);
                 if (processId == null)
                 {
                     return TimeSpan.Zero;
@@ -141,7 +141,7 @@ public class Win32ServiceApi : IWin32ServiceApi
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "サービス '{ServiceName}' の稼働時間取得に失敗しました", serviceName);
+                this._logger.LogWarning(ex, "サービス '{ServiceName}' の稼働時間取得に失敗しました", serviceName);
                 return TimeSpan.Zero;
             }
         });
@@ -163,7 +163,7 @@ public class Win32ServiceApi : IWin32ServiceApi
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "プロセス {ProcessId} のメモリ使用量取得に失敗しました", processId);
+                this._logger.LogWarning(ex, "プロセス {ProcessId} のメモリ使用量取得に失敗しました", processId);
                 return 0.0;
             }
         });
@@ -185,7 +185,7 @@ public class Win32ServiceApi : IWin32ServiceApi
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "サービス '{ServiceName}' の依存サービス数取得に失敗しました", serviceName);
+                this._logger.LogWarning(ex, "サービス '{ServiceName}' の依存サービス数取得に失敗しました", serviceName);
                 return 0;
             }
         });
@@ -202,7 +202,7 @@ public class Win32ServiceApi : IWin32ServiceApi
         {
             try
             {
-                var processId = GetProcessId(serviceName);
+                var processId = this.GetProcessId(serviceName);
                 if (processId == null)
                 {
                     // Service is not running, so status changed when it stopped
@@ -214,7 +214,7 @@ public class Win32ServiceApi : IWin32ServiceApi
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "サービス '{ServiceName}' の状態変更時刻取得に失敗しました", serviceName);
+                this._logger.LogWarning(ex, "サービス '{ServiceName}' の状態変更時刻取得に失敗しました", serviceName);
                 return (DateTime?)null;
             }
         });

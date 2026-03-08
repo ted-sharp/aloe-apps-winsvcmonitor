@@ -27,7 +27,7 @@ public class LogEntry
     public LogType Type { get; set; }
 
     /// <summary>メッセージ</summary>
-    public string Message { get; set; } = string.Empty;
+    public string Message { get; set; } = String.Empty;
 
     /// <summary>サービス名（操作ログ、ステータス変化ログ用）</summary>
     public string? ServiceName { get; set; }

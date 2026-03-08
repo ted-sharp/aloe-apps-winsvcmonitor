@@ -151,7 +151,7 @@ app.MapPost("/api/login", async (HttpContext context, LoginService loginService,
             Console.WriteLine($"ログ記録エラー: {ex.Message}");
         }
 
-        var redirectUrl = !string.IsNullOrEmpty(returnUrl) && Uri.IsWellFormedUriString(returnUrl, UriKind.Relative)
+        var redirectUrl = !String.IsNullOrEmpty(returnUrl) && Uri.IsWellFormedUriString(returnUrl, UriKind.Relative)
             ? returnUrl
             : "/services";
 
@@ -179,7 +179,7 @@ app.MapPost("/api/login", async (HttpContext context, LoginService loginService,
         }
 
         var errorUrl = $"/login?error={Uri.EscapeDataString(message)}";
-        if (!string.IsNullOrEmpty(returnUrl) && Uri.IsWellFormedUriString(returnUrl, UriKind.Relative))
+        if (!String.IsNullOrEmpty(returnUrl) && Uri.IsWellFormedUriString(returnUrl, UriKind.Relative))
         {
             errorUrl += $"&returnUrl={Uri.EscapeDataString(returnUrl)}";
         }

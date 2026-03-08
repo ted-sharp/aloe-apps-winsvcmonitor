@@ -18,34 +18,34 @@ public class TrayIconManager : IDisposable
 
     public TrayIconManager()
     {
-        _notifyIcon = new NotifyIcon
+        this._notifyIcon = new NotifyIcon
         {
             Visible = true,
             Text = "サービス監視 - 正常"
         };
 
-        _notifyIcon.DoubleClick += NotifyIcon_DoubleClick;
-        _notifyIcon.ContextMenuStrip = CreateContextMenu();
+        this._notifyIcon.DoubleClick += this.NotifyIcon_DoubleClick;
+        this._notifyIcon.ContextMenuStrip = this.CreateContextMenu();
 
-        SetStatusGreen();
+        this.SetStatusGreen();
     }
 
     public void SetStatusGreen()
     {
-        _notifyIcon.Icon = CreateIcon(Color.Green);
-        _notifyIcon.Text = "サービス監視 - 正常";
+        this._notifyIcon.Icon = this.CreateIcon(Color.Green);
+        this._notifyIcon.Text = "サービス監視 - 正常";
     }
 
     public void SetStatusRed()
     {
-        _notifyIcon.Icon = CreateIcon(Color.Red);
-        _notifyIcon.Text = "サービス監視 - 必須サービス停止";
+        this._notifyIcon.Icon = this.CreateIcon(Color.Red);
+        this._notifyIcon.Text = "サービス監視 - 必須サービス停止";
     }
 
     private Icon CreateIcon(Color color)
     {
         // 古いアイコンのHICONを解放
-        var oldIcon = _notifyIcon.Icon;
+        var oldIcon = this._notifyIcon.Icon;
 
         Icon newIcon;
         using (var bitmap = new Bitmap(16, 16))
@@ -99,10 +99,10 @@ public class TrayIconManager : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (this._disposed) return;
 
-        _notifyIcon.Visible = false;
-        _notifyIcon.Dispose();
-        _disposed = true;
+        this._notifyIcon.Visible = false;
+        this._notifyIcon.Dispose();
+        this._disposed = true;
     }
 }
